@@ -40,8 +40,8 @@ export const config = {
   jwt: {
     secret: process.env.JWT_SECRET || 'secreto-super-seguro-para-desarrollo-2025',
     expiresIn: process.env.JWT_EXPIRES_IN || '24h',
-    issuer: 'Sistema ERP Mantenimiento',
-    audience: 'Secretaria de Bienestar Sonora'
+    issuer: 'Sistema de Gestión Stanza Malaga',
+    audience: 'Residencial Stanza Malaga Seccion Almeria'
   },
 
   // Configuración de CORS

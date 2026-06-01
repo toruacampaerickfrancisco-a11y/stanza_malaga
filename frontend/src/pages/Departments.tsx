@@ -38,10 +38,10 @@ const Departments: React.FC = () => {
       if (response.success) {
         setDepartments(response.data);
       } else {
-        setError(response.message || 'Error al cargar departamentos');
+        setError(response.message || 'Error al cargar áreas y eventos');
       }
     } catch (err) {
-      setError('No se pudo cargar la lista de departamentos.');
+      setError('No se pudo cargar la lista de áreas y eventos.');
       console.error(err);
     } finally {
       setLoading(false);
@@ -75,15 +75,15 @@ const Departments: React.FC = () => {
     try {
       if (isEditing && currentDepartment.id) {
         await departmentService.update(currentDepartment.id, currentDepartment);
-        showSuccess('Departamento actualizado correctamente');
+        showSuccess('Área/Evento actualizado correctamente');
       } else {
         await departmentService.create(currentDepartment);
-        showSuccess('Departamento creado correctamente');
+        showSuccess('Área/Evento creado correctamente');
       }
       handleCloseModal();
       fetchDepartments();
     } catch (err) {
-      showError('Error al guardar el departamento');
+      showError('Error al guardar el área/evento');
       console.error(err);
     }
   };
@@ -93,10 +93,10 @@ const Departments: React.FC = () => {
     if (confirmed) {
       try {
         await departmentService.delete(id);
-        showSuccess('Departamento eliminado correctamente');
+        showSuccess('Área/Evento eliminado correctamente');
         fetchDepartments();
       } catch (err) {
-        showError('Error al eliminar el departamento');
+        showError('Error al eliminar el área/evento');
         console.error(err);
       }
     }
@@ -107,14 +107,14 @@ const Departments: React.FC = () => {
       setLoading(true);
       const dataToExport = departments.map(dept => {
         const row: Record<string, any> = {};
-        if (visibleColumns.includes('dependencia')) row['Dependencia'] = 'Secretaria de Bienestar';
-        if (visibleColumns.includes('display_name')) row['Departamento'] = dept.display_name;
-        if (visibleColumns.includes('is_active')) row['Activo'] = dept.is_active ? 'Sí' : 'No';
+        if (visibleColumns.includes('dependencia')) row['Administración'] = 'Administración Residencial';
+        if (visibleColumns.includes('display_name')) row['Área / Evento'] = dept.display_name;
+        if (visibleColumns.includes('is_active')) row['Habilitado'] = dept.is_active ? 'Sí' : 'No';
         return row;
       });
-      exportToExcel(dataToExport, 'Departamentos');
+      exportToExcel(dataToExport, 'Catalogo_Eventos_Areas');
     } catch (err) {
-      console.error('Error exporting departments:', err);
+      console.error('Error exporting areas/events:', err);
       await showError('Error', 'No se pudo exportar los datos.');
     } finally {
       setLoading(false);
@@ -131,12 +131,12 @@ const Departments: React.FC = () => {
 
   const allColumns = [
     {
-      label: 'Dependencia',
+      label: 'Administración',
       key: 'dependencia',
-      render: () => 'Secretaria de Bienestar'
+      render: () => 'Administración Residencial'
     },
     { 
-      label: 'Departamento', 
+      label: 'Área / Tipo de Evento', 
       key: 'display_name',
       render: (dept: Department) => <div style={{ fontWeight: 500 }}>{dept.display_name}</div>
     },
@@ -216,8 +216,8 @@ const Departments: React.FC = () => {
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h1>Catálogo de Departamentos</h1>
-            <p>Administra los departamentos y áreas de la institución.</p>
+            <h1>Catálogo de Áreas y Eventos</h1>
+            <p>Administra las áreas comunes y los tipos de eventos permitidos.</p>
           </div>
         </div>
 
@@ -284,7 +284,7 @@ const Departments: React.FC = () => {
                 <input
                   className="form-input"
                   type="text"
-                  placeholder="Buscar departamento..."
+                  placeholder="Buscar área o evento..."
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
@@ -332,25 +332,25 @@ const Departments: React.FC = () => {
                  <Home size={14} style={{ marginRight: 4 }} /> Inicio
               </span>
               <span style={{ margin: '0 8px' }}>/</span>
-              <span style={{ cursor: 'pointer' }} onClick={handleCloseModal}>Departamentos</span>
+              <span style={{ cursor: 'pointer' }} onClick={handleCloseModal}>Áreas y Eventos</span>
               <span style={{ margin: '0 8px' }}>/</span>
-              <span style={{ color: '#111827', fontWeight: 600 }}>{isEditing ? 'Editar' : 'Nuevo'} Departamento</span>
+              <span style={{ color: '#111827', fontWeight: 600 }}>{isEditing ? 'Editar' : 'Nueva'} Área / Evento</span>
             </div>
             <h2 style={{ fontSize: '24px', fontWeight: 600, color: '#111827', margin: 0 }}>
-              {isEditing ? 'Editar Departamento' : 'Nuevo Departamento'}
+              {isEditing ? 'Editar Área / Evento' : 'Nueva Área / Evento'}
             </h2>
           </div>
           
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '600px' }}>
             <div className="form-group">
-              <label className="form-label" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Nombre del Departamento</label>
+              <label className="form-label" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Nombre del Área / Evento</label>
               <input
                 type="text"
                 className="form-input"
                 value={currentDepartment?.display_name || ''}
                 onChange={(e) => setCurrentDepartment({ ...currentDepartment, display_name: e.target.value })}
                 required
-                placeholder="Ej. Recursos Humanos"
+                placeholder="Ej. Casa Club o Alberca"
                 style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '4px' }}
               />
             </div>
@@ -362,7 +362,7 @@ const Departments: React.FC = () => {
                   onChange={(e) => setCurrentDepartment({ ...currentDepartment, is_active: e.target.checked })}
                   style={{ width: '16px', height: '16px' }}
                 />
-                <span style={{ marginLeft: 8 }}>Departamento Activo</span>
+                <span style={{ marginLeft: 8 }}>Área / Evento Habilitado</span>
               </label>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-start', gap: 12, marginTop: 24 }}>
@@ -370,7 +370,7 @@ const Departments: React.FC = () => {
                 {isEditing ? 'Actualizar' : 'Crear'}
               </button>
               <button type="button" className="btn btn-outline" onClick={handleCloseModal}>
-                Cancelar
+                Regresar
               </button>
             </div>
           </form>

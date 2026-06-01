@@ -24,9 +24,14 @@ export const ticketService = {
     solution?: string;
     partsUsed?: string;
     timeSpent?: number;
+    eventDate?: string;
+    eventTime?: string;
+    eventDuration?: number;
+    reportedById?: string;
   }): Promise<Ticket> {
     // Mapear campos del frontend a los del backend
     const payload: any = {
+      ...data,
       title: data.title,
       description: data.description,
       priority: data.priority,
@@ -47,6 +52,10 @@ export const ticketService = {
     solution?: string;
     partsUsed?: string;
     timeSpent?: number;
+    eventDate?: string;
+    eventTime?: string;
+    eventDuration?: number;
+    reportedById?: string;
   }>): Promise<Ticket> {
     // Mapear campos del frontend a los del backend
     const payload: any = {

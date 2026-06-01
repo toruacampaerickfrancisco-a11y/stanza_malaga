@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Stanza Malaga</string>
+    <string name="title_activity_main">Stanza Malaga</string>
+    <string name="package_name">com.stanzamalaga.erp</string>
+    <string name="custom_url_scheme">com.stanzamalaga.erp</string>
+</resources>

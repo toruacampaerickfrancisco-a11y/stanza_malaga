@@ -6,21 +6,18 @@ const dashboardController = {
     try {
       const user = ctx.state.user || {};
       const role = ((user.rol || user.role) || '').toString().toLowerCase().trim();
-      const isRestricted = ['usuario', 'user', 'inventario'].includes(role);
+      const isRestricted = ['usuario', 'user', 'inventario', 'residente'].includes(role);
 
-      // Mostrar por defecto estadísticas de todo el sistema.
-      // Si en el futuro se desea limitar a tickets reportados por el usuario,
-      // se puede activar la siguiente línea para aplicar el filtro:
-      // const where = isRestricted ? { reported_by_id: user.id } : {};
-      const where = {};
+      // Aplicar RBAC: Los residentes solo ven sus propios registros en el resumen
+      const where = isRestricted ? { reported_by_id: user.id } : {};
 
       // Tickets stats
       const totalTickets = await Ticket.count({ where });
-      const openTickets = await Ticket.count({ where: { ...where, status: 'nuevo' } });
-      const pendingTickets = await Ticket.count({ where: { ...where, status: 'pendiente' } });
+      const openTickets = await Ticket.count({ where: { ...where, status: 'solicitado' } });
+      const pendingTickets = await Ticket.count({ where: { ...where, status: 'confirmado' } });
       // Usar solo los valores válidos del enum en la base de datos (español)
-      const inProgressTickets = await Ticket.count({ where: { ...where, status: 'en_proceso' } });
-      const closedTickets = await Ticket.count({ where: { ...where, status: 'cerrado' } });
+      const inProgressTickets = await Ticket.count({ where: { ...where, status: 'realizado' } });
+      const closedTickets = await Ticket.count({ where: { ...where, status: 'cancelado' } });
 
       // Equipment stats
       const totalEquipment = await Equipment.count();
@@ -37,7 +34,7 @@ const dashboardController = {
         const recentTickets = await Ticket.findAll({
           where,
           limit: 3,
-          order: [['created_at', 'DESC']],
+          order: [['createdAt', 'DESC']],
           include: [
             { model: User, as: 'reportedBy', attributes: ['nombre_completo'] }
           ]
@@ -49,7 +46,7 @@ const dashboardController = {
           title: t.title,
           status: t.status,
           priority: t.priority,
-          createdAt: t.created_at || t.createdAt,
+          createdAt: t.createdAt,
           reportedBy: t.reportedBy ? t.reportedBy.nombre_completo : 'Usuario'
         }));
       } catch (err) {

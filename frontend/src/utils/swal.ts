@@ -5,16 +5,37 @@ export const showAlert = (title: string, text: string, icon: 'success' | 'error'
     title,
     text,
     icon,
-    confirmButtonColor: '#3085d6',
+    confirmButtonColor: '#800020',
     confirmButtonText: 'Aceptar'
   });
 };
 
+const Toast = Swal.mixin({
+  toast: true,
+  position: 'top-end',
+  showConfirmButton: false,
+  timer: 3000,
+  timerProgressBar: true,
+  didOpen: (toast) => {
+    toast.addEventListener('mouseenter', Swal.stopTimer);
+    toast.addEventListener('mouseleave', Swal.resumeTimer);
+  }
+});
+
+export const showToast = (title: string, icon: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+  return Toast.fire({
+    icon,
+    title
+  });
+};
+
 export const showSuccess = (title: string, text: string = '') => {
+  if (!text) return showToast(title, 'success');
   return showAlert(title, text, 'success');
 };
 
 export const showError = (title: string, text: string = '') => {
+  if (!text) return showToast(title, 'error');
   return showAlert(title, text, 'error');
 };
 

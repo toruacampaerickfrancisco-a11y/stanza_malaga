@@ -8,35 +8,59 @@ const mockUsers: User[] = [
   {
     id: '1',
     username: 'admin',
-    email: 'admin@bienestar.sonora.gob.mx',
-    fullName: 'Administrador del Sistema',
-    employeeNumber: 'EMP001',
+    email: 'admin@stanzamalaga.com',
+    fullName: 'Administrador Residencial',
+    employeeNumber: 'ADM001',
     role: 'admin',
-    department: 'Sistemas',
+    department: 'Administración',
     isActive: true,
     createdAt: new Date('2025-01-01'),
     updatedAt: new Date('2025-01-01')
   },
   {
+    id: 'admin_erick',
+    username: 'eftcampa@gmail.com',
+    email: 'eftcampa@gmail.com',
+    fullName: 'Erick Administrador',
+    employeeNumber: 'RES000',
+    role: 'admin',
+    department: 'Dirección',
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
     id: '2',
-    username: 'tecnico1',
-    email: 'tecnico1@bienestar.sonora.gob.mx',
-    fullName: 'Juan Carlos Técnico',
-    employeeNumber: 'EMP002',
-    role: 'tecnico',
-    department: 'Soporte Técnico',
+    username: 'eventos1',
+    email: 'eventos@stanzamalaga.com',
+    fullName: 'Coordinador de Eventos',
+    employeeNumber: 'EVT001',
+    role: 'eventos',
+    department: 'Eventos',
     isActive: true,
     createdAt: new Date('2025-01-01'),
     updatedAt: new Date('2025-01-01')
   },
   {
     id: '3',
-    username: 'usuario1',
-    email: 'usuario1@bienestar.sonora.gob.mx',
-    fullName: 'María López Usuario',
-    employeeNumber: 'EMP003',
-    role: 'usuario',
-    department: 'Recursos Humanos',
+    username: 'residente1',
+    email: 'residente1@stanzamalaga.com',
+    fullName: 'Familia García - Almeria 45',
+    employeeNumber: 'RES045',
+    role: 'residente',
+    department: 'Sección Almeria',
+    isActive: true,
+    createdAt: new Date('2025-01-01'),
+    updatedAt: new Date('2025-01-01')
+  },
+  {
+    id: '4',
+    username: 'tesorero1',
+    email: 'tesorero@stanzamalaga.com',
+    fullName: 'Tesorero de Mesa Directiva',
+    employeeNumber: 'TES001',
+    role: 'tesorero',
+    department: 'Mesa Directiva',
     isActive: true,
     createdAt: new Date('2025-01-01'),
     updatedAt: new Date('2025-01-01')
@@ -49,7 +73,7 @@ export const mockAuth = {
     // Simular delay de red
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    const user = mockUsers.find(u => u.username === username);
+    const user = mockUsers.find(u => u.username === username || u.email === username);
     
     if (!user) {
       throw new Error('Usuario no encontrado');
@@ -58,8 +82,10 @@ export const mockAuth = {
     // Simular validación de contraseña (en desarrollo todas son válidas)
     const validPasswords: Record<string, string> = {
       'admin': 'admin123',
-      'tecnico1': 'tecnico123',
-      'usuario1': 'usuario123'
+      'eventos1': 'eventos123',
+      'residente1': 'residente123',
+      'tesorero1': 'tesorero123',
+      'eftcampa@gmail.com': 'Erick123'
     };
     
     if (validPasswords[username] !== password) {

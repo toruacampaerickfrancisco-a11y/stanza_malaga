@@ -34,9 +34,9 @@ const pdfController = {
       const user = ctx.state.user;
       const role = (user.rol || user.role || '').toLowerCase().trim();
       
-      if (!['admin', 'tecnico', 'technician'].includes(role)) {
+      if (!['admin', 'presidente', 'vicepresidente', 'tesorero', 'eventos', 'residente', 'usuario', 'tecnico', 'technician'].includes(role)) {
         ctx.status = 403;
-        ctx.body = { success: false, message: 'Acceso denegado. Solo administradores y técnicos pueden generar este documento.' };
+        ctx.body = { success: false, message: 'Acceso denegado. No tiene permisos para generar este documento.' };
         return;
       }
 
@@ -95,18 +95,18 @@ const pdfController = {
       }
       
       // Title (Right)
-      doc.fontSize(14).font('Helvetica-Bold').text('REPORTE DE SERVICIO', 0, startY + 10, { align: 'right', width: pageWidth + 30 });
+      doc.fontSize(14).font('Helvetica-Bold').text('RECIBO DE RESERVACIÓN', 0, startY + 10, { align: 'right', width: pageWidth + 30 });
 
       // Report No & Date
       const headerInfoY = startY + 40;
       // No DE REPORTE
-      drawHeaderBox(col2X, headerInfoY, 100, 'No DE REPORTE');
+      drawHeaderBox(col2X, headerInfoY, 100, 'FOLIO RESERVA');
       doc.rect(col2X + 100, headerInfoY, colWidth - 100, 15).stroke();
       doc.fontSize(10).fillColor('black').text(ticket.ticket_number, col2X + 105, headerInfoY + 3);
 
       // FECHA
       const dateY = headerInfoY + 20;
-      drawHeaderBox(col2X, dateY, 100, 'FECHA');
+      drawHeaderBox(col2X, dateY, 100, 'FECHA REGISTRO');
       doc.rect(col2X + 100, dateY, colWidth - 100, 15).stroke();
       
       let dateText = '';
@@ -124,8 +124,8 @@ const pdfController = {
 
       let currentY = startY + 90;
 
-      // --- Section 1: DATOS DE USUARIO (Left) ---
-      drawHeaderBox(startX, currentY, colWidth, 'DATOS DE USUARIO');
+      // --- Section 1: DATOS DEL RESIDENTE (Left) ---
+      drawHeaderBox(startX, currentY, colWidth, 'DATOS DEL RESIDENTE');
       
       let lineY = currentY + 25;
       const lineHeight = 15;
@@ -135,16 +135,17 @@ const pdfController = {
       doc.font('Helvetica').text(ticket.reportedBy?.nombre_completo || '', startX + 60, lineY);
       doc.moveTo(startX + 55, lineY + 10).lineTo(startX + colWidth - 5, lineY + 10).stroke();
       
-      // Apellidos / No Empleado
+      // Apellidos / Calle y Lote
       lineY += lineHeight;
-      doc.font('Helvetica-Bold').text('NO. EMPLEADO:', startX + 5, lineY);
-      doc.font('Helvetica').text(ticket.reportedBy?.numero_empleado || '', startX + 80, lineY);
+      doc.font('Helvetica-Bold').text('CALLE / LOTE:', startX + 5, lineY);
+      const loteName = ticket.reportedBy?.department?.display_name || ticket.reportedBy?.departamento || 'Sin Lote';
+      doc.font('Helvetica').text(loteName, startX + 80, lineY);
       doc.moveTo(startX + 75, lineY + 10).lineTo(startX + colWidth - 5, lineY + 10).stroke();
 
-      // Departamento
+      // Condominio
       lineY += lineHeight;
-      doc.font('Helvetica-Bold').fontSize(8).text('DEPARTAMENTO:', startX + 5, lineY);
-      const deptName = ticket.reportedBy?.department?.display_name || ticket.reportedBy?.departamento || '';
+      doc.font('Helvetica-Bold').fontSize(8).text('CONDOMINIO:', startX + 5, lineY);
+      const deptName = 'Stanza Malaga';
       
       // Ajustar tamaño de fuente si el texto es muy largo
       let deptFontSize = 8;
@@ -159,85 +160,84 @@ const pdfController = {
       // Centrar verticalmente si la fuente es más pequeña
       const yOffset = deptFontSize < 8 ? (8 - deptFontSize) / 2 : 0;
       
-      doc.text(deptName, startX + 85, lineY + yOffset);
-      doc.moveTo(startX + 80, lineY + 10).lineTo(startX + colWidth - 5, lineY + 10).stroke();
+      doc.text(deptName, startX + 80, lineY + yOffset);
+      doc.moveTo(startX + 75, lineY + 10).lineTo(startX + colWidth - 5, lineY + 10).stroke();
 
 
-      // --- Section 2: OBSERVACIONES (Right) - Description ---
-      drawHeaderBox(col2X, currentY, colWidth, 'DESCRIPCION DEL PROBLEMA');
+      // --- Section 2: DESCRIPCIÓN DEL EVENTO (Right) - Description ---
+      drawHeaderBox(col2X, currentY, colWidth, 'DESCRIPCIÓN DEL EVENTO');
       doc.rect(col2X, currentY + 15, colWidth, 70).stroke();
       doc.font('Helvetica').fontSize(9).text(ticket.description || '', col2X + 5, currentY + 20, { width: colWidth - 10 });
 
       currentY += 95;
 
-      // --- Section 3: DATOS DEL EQUIPO (Left) ---
-      drawHeaderBox(startX, currentY, colWidth, 'DATOS DEL EQUIPO');
+      // --- Section 3: ÁREA COMÚN RESERVADA (Left) ---
+      drawHeaderBox(startX, currentY, colWidth, 'ÁREA COMÚN RESERVADA');
       
       lineY = currentY + 25;
       
-      // Tipo (Mapped to Spanish)
-      doc.font('Helvetica-Bold').text('TIPO:', startX + 5, lineY);
-      const equipmentType = ticket.equipment?.type || '';
-      
-      const typeMapping = {
-        'desktop': 'ESCRITORIO',
-        'computadora': 'ESCRITORIO',
-        'laptop': 'LAPTOP',
-        'printer': 'IMPRESORA',
-        'server': 'SERVIDOR',
-        'monitor': 'MONITOR',
-        'other': 'OTRO'
-      };
-      
-      const displayType = typeMapping[equipmentType.toLowerCase()] || equipmentType.toUpperCase();
-      doc.font('Helvetica').text(displayType, startX + 40, lineY);
-      doc.moveTo(startX + 35, lineY + 10).lineTo(startX + colWidth - 5, lineY + 10).stroke();
-
-      // Marca
-      lineY += lineHeight;
-      doc.font('Helvetica-Bold').text('MARCA:', startX + 5, lineY);
-      doc.font('Helvetica').text(ticket.equipment?.brand || '', startX + 45, lineY);
+      // Nombre de Área
+      doc.font('Helvetica-Bold').text('ÁREA:', startX + 5, lineY);
+      doc.font('Helvetica').text(ticket.equipment?.name || 'Área General / Tejaban', startX + 45, lineY);
       doc.moveTo(startX + 40, lineY + 10).lineTo(startX + colWidth - 5, lineY + 10).stroke();
 
-      // Modelo
+      // Ubicación
       lineY += lineHeight;
-      doc.font('Helvetica-Bold').text('MODELO:', startX + 5, lineY);
-      doc.font('Helvetica').text(ticket.equipment?.model || '', startX + 50, lineY);
-      doc.moveTo(startX + 45, lineY + 10).lineTo(startX + colWidth - 5, lineY + 10).stroke();
+      doc.font('Helvetica-Bold').text('UBICACIÓN:', startX + 5, lineY);
+      doc.font('Helvetica').text(ticket.equipment?.location || 'Área Común', startX + 65, lineY);
+      doc.moveTo(startX + 60, lineY + 10).lineTo(startX + colWidth - 5, lineY + 10).stroke();
 
-      // Activo Fijo
+      // Encargado de Área
       lineY += lineHeight;
-      doc.font('Helvetica-Bold').text('ACTIVO FIJO:', startX + 5, lineY);
-      doc.font('Helvetica').text(ticket.equipment?.inventory_number || '', startX + 85, lineY);
-      doc.moveTo(startX + 80, lineY + 10).lineTo(startX + colWidth - 5, lineY + 10).stroke();
+      doc.font('Helvetica-Bold').text('ENCARGADO:', startX + 5, lineY);
+      doc.font('Helvetica').text('Mesa Directiva / Eventos', startX + 70, lineY);
+      doc.moveTo(startX + 65, lineY + 10).lineTo(startX + colWidth - 5, lineY + 10).stroke();
+
+      // Cuota de Recuperación
+      lineY += lineHeight;
+      doc.font('Helvetica-Bold').text('CUOTA ASOCIADA:', startX + 5, lineY);
+      const priorityMapping = {
+        'sin_clasificar': 'SIN CUOTA',
+        'normal': 'CUOTA DE $1,500',
+        'importante': 'CUOTA ESPECIAL'
+      };
+      const displayCuota = priorityMapping[ticket.priority] || 'SIN CUOTA';
+      doc.font('Helvetica').text(displayCuota, startX + 100, lineY);
+      doc.moveTo(startX + 95, lineY + 10).lineTo(startX + colWidth - 5, lineY + 10).stroke();
 
 
-      // --- Section 4: CARACTERISTICAS DEL EQUIPO (Right) ---
-      drawHeaderBox(col2X, currentY, colWidth, 'CARACTERISTICAS DEL EQUIPO');
+      // --- Section 4: HORARIOS DEL EVENTO (Right) ---
+      drawHeaderBox(col2X, currentY, colWidth, 'HORARIOS DEL EVENTO');
       
       lineY = currentY + 25;
       
-      // Procesador
-      doc.font('Helvetica-Bold').text('PROCESADOR:', col2X + 5, lineY);
-      doc.font('Helvetica').text(ticket.equipment?.processor || '', col2X + 75, lineY);
-      doc.moveTo(col2X + 70, lineY + 10).lineTo(col2X + colWidth - 5, lineY + 10).stroke();
+      // Fecha
+      doc.font('Helvetica-Bold').text('FECHA EVENTO:', col2X + 5, lineY);
+      let eventDateText = ticket.event_date || 'No especificada';
+      if (ticket.event_date) {
+        try {
+          eventDateText = new Date(ticket.event_date + 'T00:00:00').toLocaleDateString('es-MX', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        } catch(e){}
+      }
+      doc.font('Helvetica').text(eventDateText, col2X + 85, lineY);
+      doc.moveTo(col2X + 80, lineY + 10).lineTo(col2X + colWidth - 5, lineY + 10).stroke();
 
-      // RAM
+      // Hora de Inicio
       lineY += lineHeight;
-      doc.font('Helvetica-Bold').text('RAM:', col2X + 5, lineY);
-      doc.font('Helvetica').text(ticket.equipment?.ram || '', col2X + 35, lineY);
-      doc.moveTo(col2X + 30, lineY + 10).lineTo(col2X + colWidth - 5, lineY + 10).stroke();
-
-      // Disco Duro
-      lineY += lineHeight;
-      doc.font('Helvetica-Bold').text('DISCO DURO:', col2X + 5, lineY);
-      doc.font('Helvetica').text(ticket.equipment?.hard_drive || '', col2X + 70, lineY);
+      doc.font('Helvetica-Bold').text('HORA INICIO:', col2X + 5, lineY);
+      doc.font('Helvetica').text(ticket.event_time || 'No especificada', col2X + 70, lineY);
       doc.moveTo(col2X + 65, lineY + 10).lineTo(col2X + colWidth - 5, lineY + 10).stroke();
+
+      // Duración
+      lineY += lineHeight;
+      doc.font('Helvetica-Bold').text('DURACIÓN:', col2X + 5, lineY);
+      doc.font('Helvetica').text(`${ticket.event_duration || 5} horas`, col2X + 60, lineY);
+      doc.moveTo(col2X + 55, lineY + 10).lineTo(col2X + colWidth - 5, lineY + 10).stroke();
 
       currentY += 85;
 
-      // --- Section 5: TIPO DE SERVICIO (Full Width) ---
-      drawHeaderBox(startX, currentY, pageWidth, 'TIPO DE SERVICIO');
+      // --- Section 5: CATEGORÍA DE RESERVACIÓN (Full Width) ---
+      drawHeaderBox(startX, currentY, pageWidth, 'CATEGORÍA DE RESERVACIÓN');
       
       lineY = currentY + 25;
       
@@ -250,26 +250,26 @@ const pdfController = {
         doc.font('Helvetica-Bold').text(label, x + 15, y + 1);
       };
 
-      drawCheckbox(startX + 20, lineY, 'PREVENTIVO', ticket.service_type === 'preventivo');
-      drawCheckbox(startX + 200, lineY, 'CORRECTIVO', ticket.service_type === 'correctivo');
-      drawCheckbox(startX + 400, lineY, 'INSTALACION', ticket.service_type === 'instalacion');
+      drawCheckbox(startX + 20, lineY, 'EVENTO SOCIAL', ticket.service_type === 'social');
+      drawCheckbox(startX + 200, lineY, 'EVENTO CORPORATIVO / REUNIÓN', ticket.service_type === 'corporativo');
+      drawCheckbox(startX + 400, lineY, 'ASAMBLEA DE RESIDENTES', ticket.service_type === 'educativo');
 
       currentY += 45;
 
-      // --- Section 6: DIAGNOSTICO TÉCNICO (Left) ---
-      drawHeaderBox(startX, currentY, colWidth, 'DIAGNOSTICO TÉCNICO');
+      // --- Section 6: ESTADO DE ENTREGA (INSPECCIÓN INICIAL) (Left) ---
+      drawHeaderBox(startX, currentY, colWidth, 'ESTADO DE ENTREGA (INSPECCIÓN INICIAL)');
       doc.rect(startX, currentY + 15, colWidth, 80).stroke();
-      doc.font('Helvetica').fontSize(9).text(ticket.diagnosis || '', startX + 5, currentY + 20, { width: colWidth - 10 });
+      doc.font('Helvetica').fontSize(9).text(ticket.diagnosis || 'Área limpia y sin novedades.', startX + 5, currentY + 20, { width: colWidth - 10 });
 
-      // --- Section 7: REPARACION REALIZADA (Right) ---
-      drawHeaderBox(col2X, currentY, colWidth, 'REPARACION REALIZADA');
+      // --- Section 7: ESTADO DE RECEPCIÓN (INSPECCIÓN FINAL) (Right) ---
+      drawHeaderBox(col2X, currentY, colWidth, 'ESTADO DE RECEPCIÓN (INSPECCIÓN FINAL)');
       doc.rect(col2X, currentY + 15, colWidth, 80).stroke();
-      doc.font('Helvetica').fontSize(9).text(ticket.solution || '', col2X + 5, currentY + 20, { width: colWidth - 10 });
+      doc.font('Helvetica').fontSize(9).text(ticket.solution || 'Área devuelta en perfectas condiciones y limpia.', col2X + 5, currentY + 20, { width: colWidth - 10 });
 
       currentY += 105;
 
-      // --- Section 8: PARTES Y REFACCIONES REQUERIDAS (Left) ---
-      drawHeaderBox(startX, currentY, colWidth, 'PARTES Y REFACCIONES REQUERIDAS');
+      // --- Section 8: INSUMOS PRESTADOS PARA EL EVENTO (Left) ---
+      drawHeaderBox(startX, currentY, colWidth, 'INSUMOS PRESTADOS PARA EL EVENTO');
       
       // Table Header
       const tableY = currentY + 15;
@@ -288,7 +288,7 @@ const pdfController = {
         doc.rect(startX + 40, rowY, colWidth - 40, 16).stroke();
         
         if (parts[i]) {
-          doc.font('Helvetica').text(parts[i].quantity || parts[i].cantidad || '1', startX + 2, rowY + 4, { width: 36, align: 'center' });
+          doc.font('Helvetica').text(String(parts[i].quantity || parts[i].cantidad || '1'), startX + 2, rowY + 4, { width: 36, align: 'center' });
           doc.text(parts[i].description || parts[i].name || parts[i].nombre || '', startX + 42, rowY + 4, { width: colWidth - 44 });
         }
       }
@@ -306,12 +306,12 @@ const pdfController = {
       
       // Technician Signature
       doc.moveTo(startX + 20, signatureY).lineTo(startX + 220, signatureY).stroke();
-      doc.font('Helvetica-Bold').fontSize(9).text('Firma de Técnico', startX + 20, signatureY + 5, { width: 200, align: 'center' });
-      doc.font('Helvetica').fontSize(8).text(ticket.assignedTo?.nombre_completo || '', startX + 20, signatureY + 20, { width: 200, align: 'center' });
+      doc.font('Helvetica-Bold').fontSize(9).text('Firma de Mesa Directiva', startX + 20, signatureY + 5, { width: 200, align: 'center' });
+      doc.font('Helvetica').fontSize(8).text(ticket.assignedTo?.nombre_completo || 'Mesa Directiva / Eventos', startX + 20, signatureY + 20, { width: 200, align: 'center' });
 
       // User Signature
       doc.moveTo(col2X + 20, signatureY).lineTo(col2X + 220, signatureY).stroke();
-      doc.font('Helvetica-Bold').fontSize(9).text('Firma de Usuario', col2X + 20, signatureY + 5, { width: 200, align: 'center' });
+      doc.font('Helvetica-Bold').fontSize(9).text('Firma de Residente', col2X + 20, signatureY + 5, { width: 200, align: 'center' });
       doc.font('Helvetica').fontSize(8).text(ticket.reportedBy?.nombre_completo || '', col2X + 20, signatureY + 20, { width: 200, align: 'center' });
 
       doc.end();

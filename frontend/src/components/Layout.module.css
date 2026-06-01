@@ -14,6 +14,7 @@
   flex-direction: column;
   margin-left: 280px; /* Ancho del sidebar */
   transition: margin-left var(--transition-base);
+  max-width: 100%;
 }
 
 .banner {
@@ -54,6 +55,7 @@
 @media (max-width: 768px) {
   .content {
     padding: var(--spacing-md);
+    padding-bottom: 80px; /* Espacio para el BottomNav */
   }
 }
 

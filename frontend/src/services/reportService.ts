@@ -23,17 +23,17 @@ export const reportService = {
             children: [
               // Encabezado
               new Paragraph({
-                text: 'SECRETARÍA DE BIENESTAR DEL ESTADO DE SONORA',
+                text: 'ADMINISTRACIÓN RESIDENCIAL - STANZA MALAGA',
                 heading: HeadingLevel.TITLE,
                 alignment: AlignmentType.CENTER,
               }),
               new Paragraph({
-                text: 'SISTEMA DE MANTENIMIENTO DE EQUIPOS DE CÓMPUTO',
+                text: 'CONTROL DE CUOTAS Y RESERVACIONES DE ÁREAS COMUNES',
                 alignment: AlignmentType.CENTER,
                 spacing: { after: 200 },
               }),
               new Paragraph({
-                text: 'REPORTE DE TICKETS DE SOPORTE TÉCNICO',
+                text: 'REPORTE CONSOLIDADO DE FINANZAS Y EVENTOS',
                 heading: HeadingLevel.HEADING_1,
                 alignment: AlignmentType.CENTER,
                 spacing: { before: 200, after: 200 },
@@ -75,21 +75,21 @@ export const reportService = {
               }),
               new Paragraph({
                 children: [
-                  new TextRun({ text: 'Total de tickets: ', bold: true }),
+                  new TextRun({ text: 'Total de solicitudes/reservaciones: ', bold: true }),
                   new TextRun(data.stats.totalTickets.toString()),
                 ],
                 spacing: { after: 100 },
               }),
               new Paragraph({
                 children: [
-                  new TextRun({ text: 'Tickets cerrados: ', bold: true }),
+                  new TextRun({ text: 'Eventos realizados: ', bold: true }),
                   new TextRun(data.stats.closedTickets.toString()),
                 ],
                 spacing: { after: 100 },
               }),
               new Paragraph({
                 children: [
-                  new TextRun({ text: 'Tiempo promedio de resolución: ', bold: true }),
+                  new TextRun({ text: 'Duración promedio de eventos: ', bold: true }),
                   new TextRun(`${data.stats.avgResolutionTime} horas`),
                 ],
                 spacing: { after: 200 },
@@ -134,7 +134,7 @@ export const reportService = {
 
               // Pie de página
               new Paragraph({
-                text: `Reporte generado el ${new Date().toLocaleDateString('es-ES')} por el Sistema ERP de Mantenimiento`,
+                text: `Reporte generado el ${new Date().toLocaleDateString('es-ES')} por el Sistema de Administración Stanza Malaga`,
                 alignment: AlignmentType.CENTER,
                 spacing: { before: 400 },
               }),
@@ -155,12 +155,10 @@ export const reportService = {
   // Generar reporte en formato Excel (simulado como CSV)
   async generateExcelReport(data: ReportData): Promise<void> {
     try {
-      let csvContent = 'Número,Título,Descripción,Estado,Prioridad,Reportado Por,Técnico Asignado,Equipo,Fecha Creación,Fecha Cierre,Tiempo Resolución (h)\n';
+      let csvContent = 'Folio,Evento,Descripción,Estatus,Cuota,Residente,Mesa Directiva,Área Común,Fecha Registro,Fecha Evento,Duración (h)\n';
       
       data.tickets.forEach(ticket => {
-        const resolutionTime = ticket.closedAt ? 
-          Math.round(((ticket.closedAt.getTime() - ticket.createdAt.getTime()) / (1000 * 60 * 60)) * 100) / 100 : 
-          '';
+        const resolutionTime = ticket.eventDuration || '';
         
         csvContent += [
           ticket.ticketNumber,
@@ -170,15 +168,15 @@ export const reportService = {
           this.getPriorityLabel(ticket.priority),
           ticket.reportedBy.fullName,
           ticket.assignedToId ? 'Asignado' : 'Sin asignar',
-          ticket.equipmentId ? 'Con equipo' : 'Sin equipo',
+          ticket.equipmentId ? 'Con área' : 'Sin área',
           ticket.createdAt.toLocaleDateString('es-ES'),
-          ticket.closedAt ? ticket.closedAt.toLocaleDateString('es-ES') : '',
+          ticket.eventDate || '',
           resolutionTime
         ].join(',') + '\n';
       });
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      this.downloadBlob(blob, `reporte-tickets-${new Date().toISOString().split('T')[0]}.csv`);
+      this.downloadBlob(blob, `reporte-reservaciones-${new Date().toISOString().split('T')[0]}.csv`);
     } catch (error) {
       console.error('Error generando reporte Excel:', error);
       throw new Error('Error al generar el reporte de Excel');
@@ -193,7 +191,7 @@ export const reportService = {
         <html>
         <head>
           <meta charset="utf-8">
-          <title>Reporte de Tickets - SBDI</title>
+          <title>Reporte de Reservaciones - Stanza Malaga</title>
           <style>
             body { font-family: Arial, sans-serif; margin: 20px; }
             .header { text-align: center; margin-bottom: 30px; }
@@ -211,9 +209,9 @@ export const reportService = {
         </head>
         <body>
           <div class="header">
-            <h1>SECRETARÍA DE BIENESTAR DEL ESTADO DE SONORA</h1>
-            <h2>SISTEMA DE MANTENIMIENTO DE EQUIPOS DE CÓMPUTO</h2>
-            <h3>REPORTE DE TICKETS DE SOPORTE TÉCNICO</h3>
+            <h1>ADMINISTRACIÓN RESIDENCIAL - STANZA MALAGA</h1>
+            <h2>CONTROL DE CUOTAS Y RESERVACIONES DE ÁREAS COMUNES</h2>
+            <h3>REPORTE CONSOLIDADO DE EVENTOS Y RESERVACIONES</h3>
           </div>
           
           <div class="info">
@@ -224,20 +222,20 @@ export const reportService = {
           
           <div class="stats">
             <h3>Resumen Estadístico</h3>
-            <p><strong>Total de tickets:</strong> ${data.stats.totalTickets}</p>
-            <p><strong>Tickets cerrados:</strong> ${data.stats.closedTickets}</p>
-            <p><strong>Tiempo promedio de resolución:</strong> ${data.stats.avgResolutionTime} horas</p>
+            <p><strong>Total de solicitudes/reservaciones:</strong> ${data.stats.totalTickets}</p>
+            <p><strong>Eventos realizados:</strong> ${data.stats.closedTickets}</p>
+            <p><strong>Duración promedio de eventos:</strong> ${data.stats.avgResolutionTime} horas</p>
           </div>
           
           <table>
             <thead>
               <tr>
-                <th>Número</th>
-                <th>Título</th>
-                <th>Estado</th>
-                <th>Prioridad</th>
-                <th>Reportado Por</th>
-                <th>Fecha</th>
+                <th>Folio</th>
+                <th>Nombre del Evento</th>
+                <th>Estatus</th>
+                <th>Cuota</th>
+                <th>Residente</th>
+                <th>Fecha de Solicitud</th>
               </tr>
             </thead>
             <tbody>
@@ -247,22 +245,22 @@ export const reportService = {
                   <td>${ticket.title}</td>
                   <td class="status-${ticket.status}">${this.getStatusLabel(ticket.status)}</td>
                   <td class="priority-${ticket.priority}">${this.getPriorityLabel(ticket.priority)}</td>
-                  <td>${ticket.reportedBy.fullName}</td>
-                  <td>${ticket.createdAt.toLocaleDateString('es-ES')}</td>
+                  <td>${ticket.reportedBy?.fullName || 'N/A'}</td>
+                  <td>${new Date(ticket.createdAt).toLocaleDateString('es-MX')}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
           
           <p style="text-align: center; margin-top: 40px; color: #666;">
-            Reporte generado el ${new Date().toLocaleDateString('es-ES')} por el Sistema ERP de Mantenimiento
+            Reporte generado el ${new Date().toLocaleDateString('es-ES')} por el Sistema de Administración Stanza Malaga
           </p>
         </body>
         </html>
       `;
 
       const blob = new Blob([htmlContent], { type: 'text/html' });
-      this.downloadBlob(blob, `reporte-tickets-${new Date().toISOString().split('T')[0]}.html`);
+      this.downloadBlob(blob, `reporte-reservaciones-${new Date().toISOString().split('T')[0]}.html`);
     } catch (error) {
       console.error('Error generando reporte PDF:', error);
       throw new Error('Error al generar el reporte PDF');
@@ -272,19 +270,19 @@ export const reportService = {
   // Utilidades
   getStatusLabel(status: string): string {
     const labels = {
-      nuevo: 'Nuevo',
-      en_proceso: 'En Proceso',
-      cerrado: 'Cerrado'
+      solicitado: 'Solicitado',
+      confirmado: 'Confirmado',
+      realizado: 'Realizado',
+      cancelado: 'Cancelado'
     };
     return labels[status as keyof typeof labels] || status;
   },
 
   getPriorityLabel(priority: string): string {
     const labels = {
-      baja: 'Baja',
-      media: 'Media',
-      alta: 'Alta',
-      critica: 'Crítica'
+      sin_clasificar: 'Sin Cuota',
+      normal: 'Cuota de $1,500',
+      importante: 'Cuota Especial'
     };
     return labels[priority as keyof typeof labels] || priority;
   },

@@ -63,25 +63,23 @@ app.use(bodyParser({
 // CORS
 app.use(cors({
   origin: (ctx) => {
-    // Allow configuring a single allowed origin via env var (for external access)
-    const allowedOrigin = process.env.ALLOWED_ORIGIN; // e.g. 'http://192.168.0.50:30001'
     const requestOrigin = ctx.request.header.origin;
-    if (allowedOrigin) {
-      // If the request origin matches the configured origin, allow it
-      if (requestOrigin && requestOrigin === allowedOrigin) return allowedOrigin;
-      return ''; // empty string -> CORS will block
+    // En desarrollo, permitimos cualquier origen para facilitar la conexión desde Android/iOS
+    if (config.server.env === 'development') {
+      return requestOrigin || '*';
     }
-    // Default: allow local dev origins and reflect origin if present
-    const validOrigins = ['http://localhost:30001', 'http://127.0.0.1:30001'];
-    if (requestOrigin) {
-      if (validOrigins.includes(requestOrigin)) return requestOrigin;
-      return requestOrigin; // reflect by default for convenience in development
-    }
+
+    const allowedOrigin = process.env.ALLOWED_ORIGIN;
+    if (allowedOrigin && requestOrigin === allowedOrigin) return allowedOrigin;
+
+    const validOrigins = ['http://localhost', 'http://localhost:30001', 'http://127.0.0.1:30001', 'capacitor://localhost'];
+    if (requestOrigin && validOrigins.includes(requestOrigin)) return requestOrigin;
+
     return '*';
   },
   credentials: true,
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  allowHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
 }));
 
 // Optional middleware to restrict access to a single client IP
@@ -144,7 +142,7 @@ router.get('/health', (ctx) => {
 // router.get('/', (ctx) => {
 //   ctx.body = {
 //     success: true,
-//     message: 'API Sistema ERP Mantenimiento - Secretaría de Bienestar del Estado de Sonora',
+//     message: 'API Sistema de Gestión Stanza Malaga - Seccion Almeria',
 //     version: '1.0.0',
 //     documentation: '/api/docs',
 //     endpoints: {

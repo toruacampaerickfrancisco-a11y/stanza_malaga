@@ -17,7 +17,7 @@ const insumoController = {
                 insumo_id: insumo.id,
                 quantity: { [Op.gt]: 0 }
             },
-            order: [['created_at', 'DESC']]
+            order: [['createdAt', 'DESC']]
         });
 
         // Get last exit (negative quantity)
@@ -26,7 +26,7 @@ const insumoController = {
                 insumo_id: insumo.id,
                 quantity: { [Op.lt]: 0 }
             },
-            order: [['created_at', 'DESC']]
+            order: [['createdAt', 'DESC']]
         });
 
         data.last_entry_quantity = lastEntry ? lastEntry.quantity : null;
@@ -132,7 +132,7 @@ const insumoController = {
       // 1. Obtener movimientos registrados en la nueva tabla
       const movements = await InventoryMovement.findAll({
         where: { insumo_id: id },
-        order: [['created_at', 'DESC']]
+        order: [['createdAt', 'DESC']]
       });
 
       // Fetch ticket details for movements that reference a ticket

@@ -2,6 +2,7 @@ import React from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import NotificationCenter from './NotificationCenter';
+import BottomNav from './BottomNav';
 import styles from './Layout.module.css';
 
 interface LayoutProps {
@@ -18,6 +19,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           {children}
         </main>
       </div>
+      <BottomNav />
       <NotificationCenter />
     </div>
   );

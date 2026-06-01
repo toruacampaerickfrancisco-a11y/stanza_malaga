@@ -172,8 +172,8 @@ const ticketController = {
       const user = ctx.state.user;
       const role = (user.rol || user.role || '').toLowerCase().trim();
       
-      // Roles restringidos: usuario, user, inventario
-      if (['usuario', 'user', 'inventario'].includes(role)) {
+      // Roles restringidos: usuario, user, inventario, residente
+      if (['usuario', 'user', 'inventario', 'residente'].includes(role)) {
         where.reported_by_id = user.id;
       }
 
@@ -233,15 +233,16 @@ const ticketController = {
       ]
     });
     if (ticket) {
-      // Check permissions
+      // Check permissions: Only privileged roles can delete any ticket.
+      // Restricted roles or other non-privileged roles can only delete their own.
       const user = ctx.state.user;
       const role = (user.rol || user.role || '').toLowerCase().trim();
-      
-      // If restricted role, ensure they own the ticket
-      if (['usuario', 'user', 'inventario'].includes(role)) {
+      const isPrivilegedRole = ['admin', 'presidente', 'vicepresidente', 'tesorero', 'eventos'].includes(role);
+
+      if (!isPrivilegedRole) {
         if (ticket.reported_by_id !== user.id) {
           ctx.status = 403;
-          ctx.body = { success: false, message: 'Acceso denegado' };
+          ctx.body = { success: false, message: 'Acceso denegado. Solo la Mesa Directiva puede eliminar reservaciones de otros residentes.' };
           return;
         }
       }
@@ -268,7 +269,10 @@ const ticketController = {
         timeSpent,
         partsUsed,
         insumosUsados, // Nuevo campo alternativo: [{ insumoId, cantidad }]
-        reportedById // Nuevo campo: ID del usuario que reporta (solo admin)
+        reportedById, // Nuevo campo: ID del usuario que reporta (solo admin)
+        eventDate,
+        eventTime,
+        eventDuration
       } = ctx.request.body;
 
         // Normalización helper: quitar acentos, pasar a minúsculas y convertir espacios a guiones bajos
@@ -316,13 +320,13 @@ const ticketController = {
 
       // Si priority o serviceType faltan, aplicar defaults tolerantes
       const defaultPriority = 'sin_clasificar';
-      const defaultServiceType = 'correctivo';
+      const defaultServiceType = 'social';
       const priorityValue = priority || defaultPriority;
       const serviceTypeValue = serviceType || defaultServiceType;
 
       // Validar valores permitidos para enums para evitar errores posteriores
-      const allowedPriorities = ['sin_clasificar', 'baja', 'media', 'alta', 'critica'];
-      const allowedServiceTypes = ['preventivo', 'correctivo', 'instalacion'];
+      const allowedPriorities = ['sin_clasificar', 'normal', 'importante', 'urgente', 'vip'];
+      const allowedServiceTypes = ['social', 'corporativo', 'educativo'];
 
       const normalizedPriority = normalize(priorityValue);
       const normalizedServiceType = normalize(serviceTypeValue);
@@ -349,7 +353,9 @@ const ticketController = {
       let finalReportedById = ctx.state.user.id;
       const userRole = (ctx.state.user.rol || ctx.state.user.role || '').toLowerCase().trim();
       
-      if (userRole === 'admin' && reportedById) {
+      const isPrivilegedRole = ['admin', 'presidente', 'vicepresidente', 'tesorero', 'eventos'].includes(userRole);
+
+      if (isPrivilegedRole && reportedById) {
         finalReportedById = reportedById;
       }
 
@@ -417,13 +423,16 @@ const ticketController = {
           equipment_id: equipmentId || null,
           assigned_to_id: assignedToId || null,
           reported_by_id: finalReportedById,
-          status: 'nuevo',
+          status: 'solicitado',
           diagnosis,
           solution,
           actual_hours: timeSpent,
           parts: safeParts || [],
           attachments: safeAttachments,
-          tags: safeTags
+          tags: safeTags,
+          event_date: eventDate || null,
+          event_time: eventTime || null,
+          event_duration: eventDuration ? Number(eventDuration) : 5
         };
 
         console.log('Creating Ticket with payload:', JSON.stringify(payloadForCreate, null, 2));
@@ -500,7 +509,10 @@ const ticketController = {
         attachments,
         tags,
         reportedById,
-        notes
+        notes,
+        eventDate,
+        eventTime,
+        eventDuration
       } = ctx.request.body;
 
       const ticket = await Ticket.findByPk(id);
@@ -510,15 +522,16 @@ const ticketController = {
         return;
       }
 
-      // Check permissions
+      // Check permissions: Only privileged roles can delete any ticket.
+      // Restricted roles or other non-privileged roles can only delete their own.
       const user = ctx.state.user;
       const role = (user.rol || user.role || '').toLowerCase().trim();
-      
-      // If restricted role, ensure they own the ticket
-      if (['usuario', 'user', 'inventario'].includes(role)) {
+      const isPrivilegedRole = ['admin', 'presidente', 'vicepresidente', 'tesorero', 'eventos'].includes(role);
+
+      if (!isPrivilegedRole) {
         if (ticket.reported_by_id !== user.id) {
           ctx.status = 403;
-          ctx.body = { success: false, message: 'Acceso denegado' };
+          ctx.body = { success: false, message: 'Acceso denegado. Solo la Mesa Directiva puede eliminar reservaciones de otros residentes.' };
           return;
         }
       }
@@ -536,9 +549,12 @@ const ticketController = {
       if (timeSpent) updates.actual_hours = timeSpent;
       
       if (notes !== undefined) updates.notes = notes;
+      if (eventDate !== undefined) updates.event_date = eventDate || null;
+      if (eventTime !== undefined) updates.event_time = eventTime || null;
+      if (eventDuration !== undefined) updates.event_duration = eventDuration ? Number(eventDuration) : 5;
       
-      // Permitir cambiar el usuario que reporta si es admin
-      if (role === 'admin' && reportedById) {
+      // Permitir cambiar el usuario que reporta si es un rol privilegiado
+      if (isPrivilegedRole && reportedById) {
         updates.reported_by_id = reportedById;
       }
 
@@ -627,15 +643,16 @@ const ticketController = {
         return;
       }
 
-      // Check permissions
+      // Check permissions: Only privileged roles can delete any ticket.
+      // Restricted roles or other non-privileged roles can only delete their own.
       const user = ctx.state.user;
       const role = (user.rol || user.role || '').toLowerCase().trim();
-      
-      // If restricted role, ensure they own the ticket
-      if (['usuario', 'user', 'inventario'].includes(role)) {
+      const isPrivilegedRole = ['admin', 'presidente', 'vicepresidente', 'tesorero', 'eventos'].includes(role);
+
+      if (!isPrivilegedRole) {
         if (ticket.reported_by_id !== user.id) {
           ctx.status = 403;
-          ctx.body = { success: false, message: 'Acceso denegado' };
+          ctx.body = { success: false, message: 'Acceso denegado. Solo la Mesa Directiva puede eliminar reservaciones de otros residentes.' };
           return;
         }
       }

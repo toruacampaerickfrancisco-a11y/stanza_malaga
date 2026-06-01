@@ -82,7 +82,7 @@ Equipment.init({
     allowNull: false
   },
   type: {
-    type: DataTypes.ENUM('desktop', 'laptop', 'printer', 'server', 'monitor', 'tv', 'phone', 'telefono', 'tablet', 'computadora', 'impresora', 'celular', 'otro', 'other'),
+    type: DataTypes.ENUM('desktop', 'laptop', 'printer', 'server', 'monitor', 'tv', 'phone', 'telefono', 'tablet', 'computadora', 'impresora', 'celular', 'otro', 'other', 'Transferencia', 'Efectivo', 'Tarjeta', 'Depósito', 'Otro'),
     allowNull: false
   },
   brand: {
@@ -124,7 +124,7 @@ Equipment.init({
     allowNull: true
   },
   status: {
-    type: DataTypes.ENUM('available', 'assigned', 'maintenance', 'retired', 'operativo'),
+    type: DataTypes.ENUM('available', 'assigned', 'maintenance', 'retired', 'operativo', 'en_reparacion', 'en_almacen', 'baja'),
     allowNull: false
   },
   location: {

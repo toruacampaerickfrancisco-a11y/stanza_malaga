@@ -32,5 +32,10 @@ export const activityService = {
   async addComment(activityId: string, content: string): Promise<{ success: boolean; data: any }> {
     const res = await apiClient.post<{ success: boolean; data: any }>(`/activities/${activityId}/comments`, { content });
     return res.data;
+  },
+
+  async uploadFile(fileName: string, fileData: string): Promise<{ success: boolean; url: string; name: string }> {
+    const res = await apiClient.post<{ success: boolean; url: string; name: string }>('/activities/upload', { fileName, fileData });
+    return res.data;
   }
 };

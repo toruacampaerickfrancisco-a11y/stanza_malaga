@@ -147,9 +147,9 @@ const Profile: React.FC = () => {
 
   const getRoleBadge = (role: string) => {
     const badges = {
-      admin: { label: 'Administrador', className: 'admin' },
-      tecnico: { label: 'Técnico', className: 'tecnico' },
-      usuario: { label: 'Usuario', className: 'usuario' }
+      admin: { label: 'Administrador Residencial', className: 'admin' },
+      tecnico: { label: 'Tesorero', className: 'tecnico' },
+      usuario: { label: 'Residente', className: 'usuario' }
     };
     
     const badge = badges[role as keyof typeof badges] || { label: role, className: 'usuario' };
@@ -234,7 +234,7 @@ const Profile: React.FC = () => {
 
                   <div className="form-group">
                     <label className="form-label" htmlFor="department">
-                      Departamento
+                      Área / Espacio Principal
                     </label>
                     <input
                       type="text"
@@ -244,7 +244,7 @@ const Profile: React.FC = () => {
                       className="form-input"
                       disabled
                     />
-                    <small className={styles.helpText}>Contacta al administrador para cambiar tu departamento</small>
+                    <small className={styles.helpText}>Contacta al administrador para cambiar tu área asignada</small>
                   </div>
                 </div>
 
@@ -330,7 +330,7 @@ const Profile: React.FC = () => {
                 onClick={() => setShowPasswordModal(false)}
                 className="btn btn-outline"
               >
-                Cancelar
+                Regresar
               </button>
               <button
                 type="submit"

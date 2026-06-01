@@ -257,6 +257,170 @@ class AuthController {
       };
     }
   }
+
+  // Solicitar código de recuperación de contraseña (OTP)
+  async forgotPassword(ctx) {
+    try {
+      const { identifier } = ctx.request.body;
+      if (!identifier || typeof identifier !== 'string' || identifier.trim() === '') {
+        ctx.status = 400;
+        ctx.body = { success: false, message: 'El usuario o correo electrónico es requerido.' };
+        return;
+      }
+
+      const trimmedIdentifier = identifier.trim();
+
+      // Buscar usuario por usuario o correo
+      const Op = User.sequelize.Sequelize.Op;
+      const user = await User.findOne({
+        where: {
+          [Op.or]: [
+            { usuario: trimmedIdentifier },
+            { correo: trimmedIdentifier }
+          ]
+        }
+      });
+
+      if (!user) {
+        ctx.status = 404;
+        ctx.body = { success: false, message: 'No se encontró ningún usuario con ese nombre o correo.' };
+        return;
+      }
+
+      if (!user.activo) {
+        ctx.status = 400;
+        ctx.body = { success: false, message: 'El usuario está inactivo. Contacte al administrador.' };
+        return;
+      }
+
+      // Generar código OTP de 6 dígitos
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+      // Guardar en caché global con vigencia de 10 minutos
+      global.otpCache = global.otpCache || new Map();
+      global.otpCache.set(user.id, {
+        code: otp,
+        expiresAt: Date.now() + 10 * 60 * 1000 // 10 minutos
+      });
+
+      console.log(`[WhatsApp OTP Gateway] Código generado para ${user.usuario}: ${otp}`);
+
+      ctx.status = 200;
+      ctx.body = {
+        success: true,
+        message: 'Código de recuperación generado exitosamente',
+        data: {
+          userId: user.id,
+          username: user.usuario,
+          phone: user.cargo || '',
+          code: otp // Lo retornamos para que el frontend simule la recepción del mensaje
+        }
+      };
+
+    } catch (error) {
+      console.error('Error en forgotPassword:', error);
+      ctx.status = 500;
+      ctx.body = { success: false, message: 'Error interno del servidor.' };
+    }
+  }
+
+  // Verificar código OTP
+  async verifyOtpCode(ctx) {
+    try {
+      const { userId, code } = ctx.request.body;
+      if (!userId || !code) {
+        ctx.status = 400;
+        ctx.body = { success: false, message: 'El ID del usuario y el código de verificación son requeridos.' };
+        return;
+      }
+
+      global.otpCache = global.otpCache || new Map();
+      const cached = global.otpCache.get(userId);
+
+      if (!cached) {
+        ctx.status = 400;
+        ctx.body = { success: false, message: 'No hay ninguna solicitud de recuperación activa para este usuario.' };
+        return;
+      }
+
+      if (Date.now() > cached.expiresAt) {
+        global.otpCache.delete(userId);
+        ctx.status = 400;
+        ctx.body = { success: false, message: 'El código de verificación ha expirado. Por favor, solicita uno nuevo.' };
+        return;
+      }
+
+      if (cached.code !== String(code).trim()) {
+        ctx.status = 400;
+        ctx.body = { success: false, message: 'El código de verificación es incorrecto.' };
+        return;
+      }
+
+      ctx.status = 200;
+      ctx.body = {
+        success: true,
+        message: 'Código de verificación válido.'
+      };
+
+    } catch (error) {
+      console.error('Error en verifyOtpCode:', error);
+      ctx.status = 500;
+      ctx.body = { success: false, message: 'Error interno del servidor.' };
+    }
+  }
+
+  // Restablecer contraseña con código verificado
+  async resetPassword(ctx) {
+    try {
+      const { userId, code, newPassword } = ctx.request.body;
+      if (!userId || !code || !newPassword) {
+        ctx.status = 400;
+        ctx.body = { success: false, message: 'Todos los campos son obligatorios.' };
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        ctx.status = 400;
+        ctx.body = { success: false, message: 'La nueva contraseña debe tener al menos 6 caracteres.' };
+        return;
+      }
+
+      global.otpCache = global.otpCache || new Map();
+      const cached = global.otpCache.get(userId);
+
+      if (!cached || cached.code !== String(code).trim() || Date.now() > cached.expiresAt) {
+        ctx.status = 400;
+        ctx.body = { success: false, message: 'El código de seguridad es inválido o ha expirado.' };
+        return;
+      }
+
+      // Buscar usuario
+      const user = await User.findByPk(userId);
+      if (!user) {
+        ctx.status = 404;
+        ctx.body = { success: false, message: 'Usuario no encontrado.' };
+        return;
+      }
+
+      // Actualizar la contraseña (el hook beforeUpdate la encriptará)
+      await user.update({ contrasena: newPassword });
+
+      // Limpiar caché
+      global.otpCache.delete(userId);
+
+      ctx.status = 200;
+      ctx.body = {
+        success: true,
+        message: 'Contraseña restablecida exitosamente.'
+      };
+
+    } catch (error) {
+      console.error('Error en resetPassword:', error);
+      ctx.status = 500;
+      ctx.body = { success: false, message: 'Error interno del servidor.' };
+    }
+  }
 }
 
 export default new AuthController();
+

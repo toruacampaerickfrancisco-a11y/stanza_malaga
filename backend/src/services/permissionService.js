@@ -2,7 +2,10 @@ import { sequelize } from '../config/database.js';
 import Permission from '../models/Permission.js';
 import UserPermission from '../models/UserPermission.js';
 
-// Servicio para asignar permisos por rol de forma reutilizable y transaccional
+/**
+ * Servicio para asignar permisos por rol de forma reutilizable y transaccional.
+ * Adaptado para el sistema residencial Stanza Malaga - Seccion Almeria.
+ */
 export async function assignDefaultPermissions(user, role, grantedById, options = {}) {
   const transactionProvided = !!options.transaction;
   const t = options.transaction || await sequelize.transaction();
@@ -15,24 +18,38 @@ export async function assignDefaultPermissions(user, role, grantedById, options 
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '');
 
+    // Definición de permisos por rol residencial
     const rolePermissions = {
       'admin': 'ALL',
-      'tecnico': [
+      'presidente': 'ALL',
+      'vicepresidente': 'ALL',
+      'tesorero': [
         { module: 'dashboard', actions: ['view'] },
         { module: 'profile', actions: ['view', 'edit'] },
-        { module: 'tickets', actions: ['view', 'create', 'edit'] },
-        { module: 'equipment', actions: ['view', 'create', 'edit'] },
-        { module: 'supplies', actions: ['view', 'create', 'edit'] },
-        { module: 'users', actions: ['view'] },
-        { module: 'reports', actions: ['view', 'export'] }
-      ],
-      'inventario': [
-        { module: 'dashboard', actions: ['view'] },
-        { module: 'profile', actions: ['view', 'edit'] },
-        { module: 'equipment', actions: ['view', 'create', 'edit', 'delete'] },
-        { module: 'supplies', actions: ['view', 'create', 'edit', 'delete'] },
+        { module: 'equipment', actions: ['view', 'create', 'edit', 'delete'] }, // Balance de Cuotas
+        { module: 'reports', actions: ['view', 'export'] },
         { module: 'tickets', actions: ['view'] }
       ],
+      'eventos': [
+        { module: 'dashboard', actions: ['view'] },
+        { module: 'profile', actions: ['view', 'edit'] },
+        { module: 'tickets', actions: ['view', 'create', 'edit', 'delete'] }, // Reservación de Áreas
+        { module: 'departments', actions: ['view', 'create', 'edit', 'delete'] }, // Catálogo de Eventos
+        { module: 'calendar', actions: ['view'] }
+      ],
+      'guardia': [
+        { module: 'dashboard', actions: ['view'] },
+        { module: 'profile', actions: ['view', 'edit'] },
+        { module: 'supplies', actions: ['view', 'create', 'edit'] }, // Entradas a la Cerrada
+        { module: 'tickets', actions: ['view'] }
+      ],
+      'residente': [
+        { module: 'dashboard', actions: ['view'] },
+        { module: 'profile', actions: ['view', 'edit'] },
+        { module: 'tickets', actions: ['view', 'create'] }, // Sus propias reservaciones
+        { module: 'calendar', actions: ['view'] }
+      ],
+      // Fallbacks para compatibilidad
       'usuario': [
         { module: 'dashboard', actions: ['view'] },
         { module: 'profile', actions: ['view', 'edit'] },
@@ -42,16 +59,26 @@ export async function assignDefaultPermissions(user, role, grantedById, options 
         { module: 'dashboard', actions: ['view'] },
         { module: 'profile', actions: ['view', 'edit'] },
         { module: 'tickets', actions: ['view', 'create'] }
+      ],
+      'tecnico': [
+        { module: 'dashboard', actions: ['view'] },
+        { module: 'profile', actions: ['view', 'edit'] },
+        { module: 'tickets', actions: ['view', 'create', 'edit'] },
+        { module: 'equipment', actions: ['view', 'create', 'edit'] },
+        { module: 'supplies', actions: ['view', 'create', 'edit'] }
       ]
     };
 
-    const permissionsToAssign = rolePermissions[normalizedRole] || rolePermissions['usuario'];
+    const permissionsToAssign = rolePermissions[normalizedRole] || rolePermissions['residente'];
 
+    // Grupos de alias para asegurar que si un módulo tiene varios nombres en la BD se cubran todos
     const aliasGroups = [
-      ['supplies', 'insumos'],
-      ['users', 'usuarios'],
-      ['equipment', 'equipos'],
-      ['tickets']
+      ['supplies', 'insumos', 'entradas'],
+      ['users', 'usuarios', 'residentes'],
+      ['equipment', 'equipos', 'cuotas', 'balance'],
+      ['tickets', 'reservaciones', 'eventos_reservas'],
+      ['departments', 'departamentos', 'areas', 'catalogo_eventos'],
+      ['reports', 'reportes']
     ];
 
     const moduleAliases = {};
@@ -75,12 +102,16 @@ export async function assignDefaultPermissions(user, role, grantedById, options 
       for (const p of permissionsToAssign) {
         const aliases = moduleAliases[p.module] || [p.module];
         for (const perm of allPermissions) {
-          if (aliases.includes(perm.module) && p.actions.includes(perm.action)) {
+          const permModule = (perm.module || '').toLowerCase();
+          const permAction = (perm.action || '').toLowerCase();
+
+          if (aliases.includes(permModule) && p.actions.includes(permAction)) {
             permissionsToGrant.push(perm);
           }
         }
       }
 
+      // Eliminar duplicados de permisos a asignar
       const uniquePermissions = Array.from(new Map(permissionsToGrant.map(r => [r.id, r])).values());
 
       for (const perm of uniquePermissions) {

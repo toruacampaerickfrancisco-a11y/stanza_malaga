@@ -2,13 +2,13 @@ import { DataTypes, Model, Op } from 'sequelize';
 import { sequelize } from '../config/database.js';
 
 class Ticket extends Model {
-  // Método para generar número de ticket automático
+  // Método para generar número de reserva automático
   static async generateTicketNumber() {
     const year = new Date().getFullYear();
     const lastTicket = await Ticket.findOne({
       where: {
         ticket_number: {
-          [Op.like]: `SBDI/%/${year}`
+          [Op.like]: `RES/%/${year}`
         }
       },
       order: [['ticket_number', 'DESC']]
@@ -26,7 +26,7 @@ class Ticket extends Model {
     }
     
     const nextNumber = nextSequence.toString().padStart(4, '0');
-    return `SBDI/${nextNumber}/${year}`;
+    return `RES/${nextNumber}/${year}`;
   }
 
   // Método para calcular tiempo de resolución
@@ -36,9 +36,9 @@ class Ticket extends Model {
     return Math.ceil(diffTime / (1000 * 60 * 60)); // en horas
   }
 
-  // Método para verificar si está vencido (más de 24h sin asignar)
+  // Método para verificar si está vencido (más de 24h sin confirmar)
   isOverdue() {
-    if (this.status !== 'nuevo') return false;
+    if (this.status !== 'solicitado') return false;
     const diffTime = new Date() - new Date(this.created_at);
     const hours = diffTime / (1000 * 60 * 60);
     return hours > 24;
@@ -75,7 +75,10 @@ class Ticket extends Model {
       equipment: this.equipment,
       resolutionTime: this.getResolutionTime(),
       isOverdue: this.isOverdue(),
-      notes: this.notes
+      notes: this.notes,
+      eventDate: this.event_date,
+      eventTime: this.event_time,
+      eventDuration: this.event_duration
     };
   }
 
@@ -138,19 +141,19 @@ Ticket.init({
     }
   },
   status: {
-    type: DataTypes.ENUM('nuevo', 'en_proceso', 'cerrado', 'pendiente'),
+    type: DataTypes.ENUM('solicitado', 'confirmado', 'realizado', 'cancelado'),
     allowNull: false,
-    defaultValue: 'nuevo'
+    defaultValue: 'solicitado'
   },
   priority: {
-    type: DataTypes.ENUM('sin_clasificar', 'baja', 'media', 'alta', 'critica'),
+    type: DataTypes.ENUM('sin_clasificar', 'normal', 'importante', 'urgente', 'vip'),
     allowNull: false,
     defaultValue: 'sin_clasificar'
   },
   service_type: {
-    type: DataTypes.ENUM('preventivo', 'correctivo', 'instalacion'),
+    type: DataTypes.ENUM('social', 'corporativo', 'educativo'),
     allowNull: false,
-    defaultValue: 'correctivo'
+    defaultValue: 'social'
   },
   reported_by_id: {
     type: DataTypes.UUID,
@@ -290,6 +293,19 @@ Ticket.init({
         this.setDataValue('tags', '[]');
       }
     }
+  },
+  event_date: {
+    type: DataTypes.DATEONLY,
+    allowNull: true
+  },
+  event_time: {
+    type: DataTypes.STRING(5),
+    allowNull: true
+  },
+  event_duration: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 5
   }
 }, {
   sequelize,
@@ -308,10 +324,10 @@ Ticket.init({
         ticket.assigned_at = new Date();
       }
       if (ticket.changed('status')) {
-        if (ticket.status === 'en_proceso' && !ticket.started_at) {
+        if (ticket.status === 'confirmado' && !ticket.started_at) {
           ticket.started_at = new Date();
         }
-        if (ticket.status === 'cerrado' && !ticket.resolved_at) {
+        if (ticket.status === 'realizado' && !ticket.resolved_at) {
           ticket.resolved_at = new Date();
         }
       }

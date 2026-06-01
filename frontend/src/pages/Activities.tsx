@@ -6,7 +6,7 @@ import { userService } from '../services/userService';
 import { ticketService } from '../services/ticketService';
 import styles from './Activities.module.css';
 import Modal from '../components/Modal';
-import { Plus, Filter, Calendar, User as UserIcon, MessageSquare, Tag, Home, Edit, Trash2, Eye, FileSpreadsheet, Columns, Search, ArrowLeft } from 'lucide-react';
+import { Plus, Filter, Calendar, User as UserIcon, MessageSquare, Tag, Home, Edit, Trash2, Eye, FileSpreadsheet, Columns, Search, ArrowLeft, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import Swal from 'sweetalert2';
@@ -16,12 +16,31 @@ import { exportToExcel } from '../utils/exportUtils'; // Importar exportToExcel
 // Estilos para badgets (reutilizados del CSS module o inline por simplicidad)
 const badgeStyle = { px: '8px', py: '2px', r: '4px', fs: '12px' };
 
+interface ParsedDescription {
+  notes: string;
+  budget: number;
+  documentUrl?: string;
+  documentName?: string;
+}
+
+const parseActivityDescription = (desc: string): ParsedDescription => {
+  try {
+    const d = (desc || '').trim();
+    if (d.startsWith('{') && d.endsWith('}')) {
+      return JSON.parse(d);
+    }
+  } catch (e) {
+    // fallback
+  }
+  return { notes: desc || '', budget: 0 };
+};
+
 const Activities: React.FC = () => {
   const { user } = useAuth();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<User[]>([]);
-  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [reservaciones, setReservaciones] = useState<Ticket[]>([]);
   
   // Filtros
   const [filterPriority, setFilterPriority] = useState<string>('');
@@ -29,8 +48,8 @@ const Activities: React.FC = () => {
   const [dateRange, setDateRange] = useState<{from?: string, to?: string}>({});
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Columnas Visibles
-  const [visibleColumns, setVisibleColumns] = useState<string[]>(['title', 'status', 'priority', 'due_date', 'creator', 'actions']);
+  // Columnas Visibles - Incluyendo Presupuesto por defecto
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(['title', 'status', 'priority', 'budget', 'due_date', 'creator', 'actions']);
   const [showColumnSelector, setShowColumnSelector] = useState(false);
 
   // Modal Creation/Edit
@@ -38,6 +57,12 @@ const Activities: React.FC = () => {
   const [currentActivity, setCurrentActivity] = useState<Partial<Activity> | null>(null);
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
   
+  // Estados para Presupuesto y Archivos Adjuntos
+  const [projectNotes, setProjectNotes] = useState('');
+  const [projectBudget, setProjectBudget] = useState<number | ''>('');
+  const [attachedFile, setAttachedFile] = useState<{ url: string; name: string } | null>(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
+
   // View Details Modal
   const [viewActivity, setViewActivity] = useState<Activity | null>(null);
   const [commentText, setCommentText] = useState('');
@@ -58,10 +83,10 @@ const Activities: React.FC = () => {
       // Load users for assignment (fetch more to ensure we get all staff)
       const usersRes = await userService.getUsers({ limit: 1000 });
 
-      // Load tickets
-      const ticketsRes = await ticketService.getTickets({ limit: 100, status: 'nuevo' }); // Load recent/active tickets
-      // Or maybe all open tickets ? For now just 100 recent.
-      setTickets(ticketsRes.data || []);
+      // Load reservaciones
+      const ticketsRes = await ticketService.getTickets({ limit: 100, status: 'nuevo' }); // Load recent/active reservaciones
+      // Or maybe all open reservaciones ? For now just 100 recent.
+      setReservaciones(ticketsRes.data || []);
 
       setUsers(usersRes.data || []);
     } catch (error) {
@@ -90,12 +115,49 @@ const Activities: React.FC = () => {
       exportToExcel(dataToExport, 'Bitacora_Actividades');
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingFile(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const fileData = event.target?.result as string;
+        const res = await activityService.uploadFile(file.name, fileData);
+        if (res.success) {
+          setAttachedFile({ url: res.url, name: res.name });
+          Swal.fire('Subido', 'El documento de respaldo ha sido cargado', 'success');
+        } else {
+          Swal.fire('Error', 'No se pudo subir el archivo', 'error');
+        }
+        setUploadingFile(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      Swal.fire('Error', 'Ocurrió un error al cargar el archivo', 'error');
+      setUploadingFile(false);
+    }
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentActivity?.title) return;
 
     try {
-      const payload: any = { ...currentActivity };
+      const descJSON = JSON.stringify({
+        notes: projectNotes,
+        budget: Number(projectBudget) || 0,
+        documentUrl: attachedFile?.url || undefined,
+        documentName: attachedFile?.name || undefined
+      });
+
+      const payload: any = { 
+        ...currentActivity, 
+        description: descJSON 
+      };
+
       if (selectedParticipants.length > 0) {
         payload.participants = selectedParticipants.map(uid => ({ user_id: uid, role: 'collaborator' }));
       }
@@ -182,6 +244,9 @@ const Activities: React.FC = () => {
   };
 
   const openNewModal = () => {
+      setProjectNotes('');
+      setProjectBudget('');
+      setAttachedFile(null);
       setCurrentActivity({
           title: '',
           description: '',
@@ -195,6 +260,10 @@ const Activities: React.FC = () => {
   };
 
   const openEditModal = (activity: Activity) => {
+    const parsed = parseActivityDescription(activity.description);
+    setProjectNotes(parsed.notes);
+    setProjectBudget(parsed.budget || '');
+    setAttachedFile(parsed.documentUrl ? { url: parsed.documentUrl, name: parsed.documentName || 'Documento' } : null);
     setCurrentActivity(activity);
     // Populate participants if they exist
     if (activity.participants) {
@@ -210,6 +279,16 @@ const Activities: React.FC = () => {
       key: 'title', 
       label: 'Título', 
       render: (row: Activity) => <span style={{ fontWeight: 500 }}>{row.title}</span> 
+    },
+    { 
+       key: 'budget', 
+       label: 'Presupuesto',
+       render: (row: Activity) => {
+         const parsed = parseActivityDescription(row.description);
+         return parsed.budget > 0 
+           ? <strong style={{ color: '#10b981' }}>${parsed.budget.toLocaleString('es-MX')}</strong> 
+           : <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>-</span>;
+       }
     },
     { 
       key: 'status', 
@@ -308,7 +387,7 @@ const Activities: React.FC = () => {
           </button>
           <div>
             <h1 style={{ fontSize: '24px', fontWeight: 600, color: '#111827', margin: 0 }}>Gestión de Actividades</h1>
-            <p style={{ margin: 0, color: '#6b7280' }}>Administra las tareas y actividades del equipo.</p>
+            <p style={{ margin: 0, color: '#6b7280' }}>Administra las tareas y actividades de la administración.</p>
           </div>
         </div>
 
@@ -345,7 +424,7 @@ const Activities: React.FC = () => {
                             onChange={e => setFilterVisibility(e.target.value)}
                         >
                             <option value="">TODAS</option>
-                            <option value="team">EQUIPO</option>
+                            <option value="team">INTERNO</option>
                             <option value="private">PRIVADO</option>
                             <option value="public">PÚBLICO</option>
                         </select>
@@ -471,12 +550,50 @@ const Activities: React.FC = () => {
             </div>
             
             <div className={styles.formGroup}>
-                <label className={styles.label}>Descripción</label>
+                <label className={styles.label}>Notas / Descripción del Proyecto</label>
                 <textarea 
                     className={styles.textarea} 
-                    value={currentActivity?.description || ''} 
-                    onChange={e => setCurrentActivity({...currentActivity!, description: e.target.value})}
+                    value={projectNotes} 
+                    onChange={e => setProjectNotes(e.target.value)}
+                    placeholder="Detalles sobre el proyecto, materiales, cotizaciones, etc..."
                 />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+                <div className={styles.formGroup}>
+                    <label className={styles.label}>Presupuesto Estimado ($)</label>
+                    <input 
+                        type="number"
+                        className={styles.input} 
+                        placeholder="Ej: 25000"
+                        value={projectBudget} 
+                        onChange={e => setProjectBudget(e.target.value === '' ? '' : Number(e.target.value))}
+                    />
+                </div>
+                
+                <div className={styles.formGroup}>
+                    <label className={styles.label}>Documento de Respaldo / Cotización</label>
+                    <input 
+                        type="file"
+                        className={styles.input} 
+                        accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                        onChange={handleFileChange}
+                        disabled={uploadingFile}
+                    />
+                    {uploadingFile && <span style={{ fontSize: '12px', color: '#3b82f6', display: 'block', marginTop: '4px' }}>Cargando archivo...</span>}
+                    {attachedFile && (
+                      <div style={{ marginTop: '5px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ color: '#22c55e', fontWeight: 600 }}>✓ {attachedFile.name}</span>
+                        <button 
+                          type="button" 
+                          onClick={() => setAttachedFile(null)}
+                          style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '11px' }}
+                        >
+                          Remover
+                        </button>
+                      </div>
+                    )}
+                </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -501,7 +618,7 @@ const Activities: React.FC = () => {
                          value={currentActivity?.visibility || 'team'}
                          onChange={e => setCurrentActivity({...currentActivity!, visibility: e.target.value as ActivityVisibility})}
                     >
-                        <option value="team">Equipo (Técnicos/Admin)</option>
+                        <option value="team">Mesa Directiva / Administración</option>
                         <option value="private">Privado (Solo yo)</option>
                         <option value="public">Público</option>
                     </select>
@@ -533,24 +650,24 @@ const Activities: React.FC = () => {
             </div>
 
             <div className={styles.formGroup} style={{ marginTop: '10px' }}>
-                <label className={styles.label}>Relacionar con Ticket (Opcional)</label>
+                <label className={styles.label}>Relacionar con Reservación (Opcional)</label>
                 <select 
                     className={styles.select}
                     value={currentActivity?.ticket_id || ''}
                     onChange={e => setCurrentActivity({...currentActivity!, ticket_id: e.target.value})}
                 >
-                    <option value="">-- Ninguno --</option>
-                    {tickets.map(t => (
+                    <option value="">-- Ninguna --</option>
+                    {reservaciones.map(t => (
                         <option key={t.id} value={t.id}>{t.ticketNumber} - {t.title}</option>
                     ))}
                 </select>
             </div>
 
             <div className={styles.formGroup} style={{ marginTop: '10px' }}>
-                <label className={styles.label}>Participantes (Técnicos/Admin)</label>
+                <label className={styles.label}>Participantes (Responsables/Admin)</label>
                 <div style={{ maxHeight: '150px', overflowY: 'auto', border: '1px solid #d1d5db', borderRadius: '4px', padding: '8px' }}>
                     {users
-                        .filter(u => ['admin', 'tecnico', 'technician'].includes(u.role))
+                        .filter(u => ['admin', 'presidente', 'vicepresidente', 'tesorero', 'eventos', 'guardia'].includes(u.role))
                         .sort((a, b) => (a.fullName || a.username).localeCompare(b.fullName || b.username))
                         .map(u => (
                         <div key={u.id} style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
@@ -570,7 +687,7 @@ const Activities: React.FC = () => {
             </div>
 
             <div style={{ marginTop: '20px', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => setIsModalOpen(false)} style={{ padding: '8px 16px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>Cancelar</button>
+                <button type="button" onClick={() => setIsModalOpen(false)} style={{ padding: '8px 16px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>Regresar</button>
                 <button type="submit" style={{ padding: '8px 16px', borderRadius: '4px', border: 'none', background: '#0052cc', color: 'white' }}>Guardar</button>
             </div>
         </form>
@@ -583,20 +700,72 @@ const Activities: React.FC = () => {
         title={viewActivity?.title || ''}
         size="lg"
       >
-          {viewActivity && (
+          {(() => {
+              if (!viewActivity) return null;
+              const parsed = parseActivityDescription(viewActivity.description);
+              
+              let docUrl = '';
+              if (parsed.documentUrl) {
+                if (parsed.documentUrl.startsWith('http')) {
+                  docUrl = parsed.documentUrl;
+                } else {
+                  const isNative = window.location.origin.includes('localhost') && !window.location.port;
+                  const base = (isNative || window.location.protocol.startsWith('capacitor')) ? 'http://10.0.2.2:3000' : `http://${window.location.hostname}:3000`;
+                  docUrl = `${base}${parsed.documentUrl}`;
+                }
+              }
+
+              return (
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
                   {/* Left Column: Details & Comments */}
                   <div>
                       <div style={{ marginBottom: '20px' }}>
-                           <label className={styles.label}>Descripción</label>
-                           <div style={{ padding: '10px', background: '#f9f9f9', borderRadius: '4px', minHeight: '60px' }}>
-                               {viewActivity.description || 'Sin descripción'}
+                           <label className={styles.label}>Notas / Descripción del Proyecto</label>
+                           <div style={{ padding: '12px', background: '#f9fafb', borderRadius: '6px', border: '1px solid #e5e7eb', minHeight: '60px', whiteSpace: 'pre-wrap', color: '#1f2937' }}>
+                               {parsed.notes || 'Sin notas registradas.'}
                            </div>
                       </div>
 
+                      {parsed.budget > 0 && (
+                        <div style={{ marginBottom: '20px' }}>
+                             <label className={styles.label} style={{ color: '#047857', fontWeight: 600 }}>Presupuesto Estimado / Costo Obra</label>
+                             <div style={{ padding: '12px 16px', background: '#d1fae5', borderRadius: '8px', border: '1px solid #a7f3d0', color: '#065f46', fontSize: '1.25rem', fontWeight: 700 }}>
+                                 ${parsed.budget.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                             </div>
+                        </div>
+                      )}
+
+                      {docUrl && (
+                        <div style={{ marginBottom: '20px' }}>
+                             <label className={styles.label} style={{ color: '#800020', fontWeight: 600 }}>Documento de Respaldo / Cotización</label>
+                             <div>
+                                 <a 
+                                     href={docUrl} 
+                                     target="_blank" 
+                                     rel="noopener noreferrer"
+                                     style={{ 
+                                         display: 'inline-flex', 
+                                         alignItems: 'center', 
+                                         gap: '8px', 
+                                         padding: '10px 16px', 
+                                         background: '#800020', 
+                                         color: 'white', 
+                                         borderRadius: '6px', 
+                                         textDecoration: 'none', 
+                                         fontWeight: 600,
+                                         boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                     }}
+                                 >
+                                     <Download size={16} />
+                                     Ver Documento Adjunto ({parsed.documentName || 'Respaldo'})
+                                 </a>
+                             </div>
+                        </div>
+                      )}
+
                       {viewActivity.ticket && (
                         <div style={{ marginBottom: '20px' }}>
-                             <label className={styles.label}>Ticket Relacionado</label>
+                             <label className={styles.label}>Reservación Relacionada</label>
                              <div style={{ padding: '10px', background: '#e3f2fd', borderRadius: '4px', border: '1px solid #bbdefb', color: '#0d47a1', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                  <Tag size={16} />
                                  <span style={{ fontWeight: 600 }}>{viewActivity.ticket.ticketNumber}</span>
@@ -690,7 +859,8 @@ const Activities: React.FC = () => {
                       </div>
                   </div>
               </div>
-          )}
+              );
+          })()}
       </Modal>
 
     </Layout>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth.tsx';
-import { 
+import {
   Menu,
   X,
   LayoutDashboard,
@@ -13,7 +13,8 @@ import {
   Shield,
   Settings,
   LogOut,
-  ListTodo
+  ListTodo,
+  Calendar
 } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 import { PermissionModule } from '@/types';
@@ -33,7 +34,7 @@ const menuItems: MenuItem[] = [
     path: '/dashboard',
     label: 'Dashboard',
     icon: LayoutDashboard,
-    roles: ['admin', 'tecnico', 'technician'],
+    roles: ['admin', 'presidente', 'vicepresidente'],
     module: 'dashboard'
   },
   {
@@ -45,52 +46,52 @@ const menuItems: MenuItem[] = [
   },
   {
     path: '/departamentos',
-    label: 'Departamentos',
+    label: 'Catálogo de Eventos',
     icon: Building,
-    roles: ['admin'],
+    roles: ['admin', 'presidente', 'vicepresidente', 'eventos'],
     module: 'users'
   },
   {
     path: '/equipos',
-    label: 'Equipos',
+    label: 'Balance de Cuotas',
     icon: Monitor,
-    roles: ['admin', 'tecnico', 'technician', 'inventario'],
+    roles: ['admin', 'presidente', 'vicepresidente', 'tesorero'],
     module: 'equipment'
   },
   {
     path: '/tickets',
-    label: 'Tickets',
+    label: 'Reservación de Áreas',
     icon: Ticket,
-    roles: ['admin', 'tecnico', 'technician', 'usuario', 'user', 'inventario'],
+    roles: ['admin', 'presidente', 'vicepresidente', 'eventos', 'residente'],
+    module: 'tickets'
+  },
+  {
+    path: '/calendario',
+    label: 'Calendario de Eventos',
+    icon: Calendar,
+    roles: ['admin', 'presidente', 'vicepresidente', 'eventos', 'residente', 'tesorero'],
     module: 'tickets'
   },
   {
     path: '/actividades',
-    label: 'Bitácora',
+    label: 'Proyectos por Realizar',
     icon: ListTodo,
-    roles: ['admin', 'tecnico'],
-    module: 'tickets' 
+    roles: ['admin', 'presidente', 'vicepresidente', 'tesorero'],
+    module: 'dashboard'
   },
   {
     path: '/insumos',
-    label: 'Insumos',
-    icon: Monitor,
-    roles: ['admin', 'inventario'],
+    label: 'Entradas a la Cerrada',
+    icon: Shield,
+    roles: ['admin', 'presidente', 'vicepresidente', 'guardia'],
     module: 'supplies'
   },
   {
     path: '/reportes',
     label: 'Reportes',
     icon: BarChart,
-    roles: ['admin'],
+    roles: ['admin', 'presidente', 'vicepresidente', 'tesorero'],
     module: 'reports'
-  },
-  {
-    path: '/permisos',
-    label: 'Permisos',
-    icon: Shield,
-    roles: ['admin'],
-    module: 'permissions'
   }
 ];
 
@@ -101,6 +102,12 @@ const Sidebar: React.FC = () => {
   const { user, logout } = useAuth();
   const { hasModuleAccess } = usePermissions();
   const navigate = useNavigate();
+
+  const isNativeApp = window.location.origin.includes('localhost') && !window.location.port;
+  const baseUrl = (isNativeApp || window.location.protocol.startsWith('capacitor'))
+    ? 'http://10.0.2.2:3000'
+    : `http://${window.location.hostname}:3000`;
+  const logoUrl = `${baseUrl}/logo.png`;
 
   const handleLogout = () => {
     logout();
@@ -114,13 +121,13 @@ const Sidebar: React.FC = () => {
   // Filtrar elementos del menú por permisos del usuario
   const filteredMenuItems = menuItems.filter(item => {
     if (!user) return false;
-    
+
     // Verificar si tiene acceso al módulo mediante permisos
     const hasPermission = hasModuleAccess(item.module);
-    
+
     // Fallback a roles para compatibilidad (admin siempre tiene acceso)
     const hasRole = item.roles.includes(user.role);
-    
+
     return hasPermission || hasRole;
   });
 
@@ -133,7 +140,7 @@ const Sidebar: React.FC = () => {
   };
 
   return (
-  <>
+    <>
       {/* Mobile menu button */}
       <button
         className={styles.mobileMenuButton}
@@ -160,10 +167,18 @@ const Sidebar: React.FC = () => {
             <X size={24} />
           </button>
           <div className={styles.logo}>
+            <img
+              src={logoUrl}
+              alt="Logo"
+              className={styles.logoImage}
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
             {!isCollapsed && (
               <div className={styles.logoText}>
-                <h2>Secretaría de Bienestar</h2>
-                <p>Sonora</p>
+                <h2>Stanza Malaga</h2>
+                <p>Seccion Almeria</p>
               </div>
             )}
           </div>
@@ -182,7 +197,7 @@ const Sidebar: React.FC = () => {
               <li key={item.path}>
                 <NavLink
                   to={item.path}
-                  className={({ isActive }) => 
+                  className={({ isActive }) =>
                     `${styles.menuItem} ${isActive ? styles.active : ''}`
                   }
                   onClick={closeMobile}
@@ -192,23 +207,7 @@ const Sidebar: React.FC = () => {
                 </NavLink>
               </li>
             ))}
-            
-            {/* Centro de Control del Sistema - Solo Admin */}
-            {user?.role === 'admin' && (
-              <li>
-                <button
-                  className={styles.menuItem}
-                  onClick={openSettingsControl}
-                  title="Centro de Control del Sistema"
-                  style={{ width: '100%', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                >
-                  <Settings size={20} />
-                  {!isCollapsed && (
-                    <span className={styles.menuLabel}>Centro de Control</span>
-                  )}
-                </button>
-              </li>
-            )}
+
 
             {/* Botón Salir */}
             <li>

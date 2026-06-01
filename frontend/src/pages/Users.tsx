@@ -33,7 +33,23 @@ const Users: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
   const [filters, setFilters] = useState({ role: '', department: '', search: '', isActive: 'true' });
-  const [visibleColumns, setVisibleColumns] = useState<string[]>(['fullName', 'username', 'email', 'employeeNumber', 'role', 'department', 'permissions', 'isActive', 'createdAt', 'actions']);
+  
+  const DEFAULT_COLUMNS = ['fullName', 'username', 'email', 'department', 'employeeNumber', 'colonia', 'isActive', 'createdAt', 'actions'];
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(() => {
+    const saved = localStorage.getItem('users_visible_columns');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      } catch (e) {
+        console.error('Error parsing visible columns from localStorage', e);
+      }
+    }
+    return DEFAULT_COLUMNS;
+  });
+  
   const [showColumnSelector, setShowColumnSelector] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -135,7 +151,8 @@ const Users: React.FC = () => {
       role: formData.role || (isEditing && currentUser ? currentUser.role : 'usuario'),
       department: formData.department,
       employeeNumber: formData.employeeNumber,
-      isActive: true
+      phone: formData.phone,
+      isActive: formData.isActive !== undefined ? formData.isActive : true
     };
     if (!mapped.username || !mapped.fullName || !mapped.email) {
       setError("Por favor, complete todos los campos requeridos.");
@@ -233,17 +250,16 @@ const Users: React.FC = () => {
         if (visibleColumns.includes('fullName')) row['Nombre Completo'] = user.fullName;
         if (visibleColumns.includes('username')) row['Usuario'] = user.username;
         if (visibleColumns.includes('email')) row['Correo'] = user.email;
-        if (visibleColumns.includes('employeeNumber')) row['No. Empleado'] = user.employeeNumber || '-';
-        if (visibleColumns.includes('role')) row['Rol'] = user.role;
-        if (visibleColumns.includes('department')) row['Departamento'] = user.department || '-';
-        if (visibleColumns.includes('permissions')) row['Permisos'] = Array.isArray(user.permissions) ? user.permissions.length : 0;
+        if (visibleColumns.includes('department')) row['Dirección'] = user.department || '-';
+        if (visibleColumns.includes('employeeNumber')) row['Número de Casa'] = user.employeeNumber || '-';
+        if (visibleColumns.includes('colonia')) row['Colonia'] = 'Stanza Malaga Seccion Almeria';
         if (visibleColumns.includes('isActive')) row['Estado'] = user.isActive ? 'ACTIVO' : 'INACTIVO';
         if (visibleColumns.includes('createdAt')) row['Fecha Registro'] = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-';
         
         return row;
       });
 
-      exportToExcel(dataToExport, 'Usuarios');
+      exportToExcel(dataToExport, 'Residentes');
     } catch (err) {
       console.error('Error exporting users:', err);
       await showError('Error', 'No se pudo exportar los datos.');
@@ -269,28 +285,19 @@ const Users: React.FC = () => {
       render: (user: User) => user.email
     },
     {
-      key: 'employeeNumber',
-      label: 'No. Empleado',
-      render: (user: User) => user.employeeNumber || '-'
-    },
-    {
-      key: 'role',
-      label: 'Rol',
-      render: (user: User) => user.role
-    },
-    {
       key: 'department',
-      label: 'Departamento',
+      label: 'Dirección',
       render: (user: User) => user.department || '-'
     },
     {
-      key: 'permissions',
-      label: 'Permisos',
-      render: (user: User) => (
-        <span>
-          {Array.isArray(user.permissions) ? user.permissions.length : 0}
-        </span>
-      )
+      key: 'employeeNumber',
+      label: 'Número de Casa',
+      render: (user: User) => user.employeeNumber || '-'
+    },
+    {
+      key: 'colonia',
+      label: 'Colonia',
+      render: (user: User) => 'Stanza Malaga Seccion Almeria'
     },
     {
       key: 'isActive',
@@ -331,11 +338,14 @@ const Users: React.FC = () => {
   const filteredColumns = allColumns.filter(col => visibleColumns.includes(col.key));
 
   const toggleColumn = (key: string) => {
+    let newColumns: string[];
     if (visibleColumns.includes(key)) {
-      setVisibleColumns(visibleColumns.filter(k => k !== key));
+      newColumns = visibleColumns.filter(k => k !== key);
     } else {
-      setVisibleColumns([...visibleColumns, key]);
+      newColumns = [...visibleColumns, key];
     }
+    setVisibleColumns(newColumns);
+    localStorage.setItem('users_visible_columns', JSON.stringify(newColumns));
   };
 
   return (
@@ -364,8 +374,8 @@ const Users: React.FC = () => {
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h1>Gestión de Usuarios</h1>
-            <p>Crea, edita y gestiona los usuarios del sistema.</p>
+            <h1>Gestión de Residentes / Usuarios</h1>
+            <p>Crea, edita y gestiona los residentes y personal del sistema.</p>
           </div>
         </div>
         
@@ -397,13 +407,17 @@ const Users: React.FC = () => {
                   >
                     <option value="">TODOS</option>
                     <option value="admin">ADMIN</option>
-                    <option value="tecnico">TÉCNICO</option>
-                    <option value="usuario">USUARIO</option>
+                    <option value="presidente">PRESIDENTE</option>
+                    <option value="vicepresidente">VICEPRESIDENTE</option>
+                    <option value="tesorero">TESORERO</option>
+                    <option value="eventos">EVENTOS</option>
+                    <option value="guardia">GUARDIA</option>
+                    <option value="residente">RESIDENTE</option>
                   </select>
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">Departamento</label>
+                  <label className="form-label">Área / Espacio</label>
                   <select 
                     className="form-select"
                     value={filters.department}
@@ -417,9 +431,9 @@ const Users: React.FC = () => {
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                  {(user?.role === 'admin' || user?.role === 'tecnico' || user?.role === 'technician') && (
+                  {(user?.role === 'admin' || user?.role === 'presidente' || user?.role === 'vicepresidente') && (
                     <button 
-                      className="btn btn-outline"
+                      className={`${styles.btnExcel} btn btn-outline`}
                       onClick={handleExport}
                       style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#107c41', borderColor: '#107c41' }}
                       title="Exportar a Excel"
@@ -506,7 +520,7 @@ const Users: React.FC = () => {
             data={users}
             loading={loading}
             error={error && !loading ? error : null}
-            selectable={true}
+            selectable={false}
             selectedIds={selectedUserIds}
             onSelectionChange={setSelectedUserIds}
           />
@@ -522,19 +536,28 @@ const Users: React.FC = () => {
 
         {isModalOpen && (
           <div style={{ background: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
-         <div style={{ marginBottom: '24px', borderBottom: '1px solid #e5e7eb', paddingBottom: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', fontSize: '14px', color: '#6b7280', marginBottom: '8px', fontFamily: 'system-ui' }}>
-              <span style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }} onClick={() => navigate('/dashboard')}>
-                 <Home size={14} style={{ marginRight: 4 }} /> Inicio
-              </span>
-              <span style={{ margin: '0 8px' }}>/</span>
-              <span style={{ cursor: 'pointer' }} onClick={handleCloseModal}>Usuarios</span>
-              <span style={{ margin: '0 8px' }}>/</span>
-              <span style={{ color: '#111827', fontWeight: 600 }}>{isEditing ? 'Editar' : 'Crear'} Usuario</span>
+         <div style={{ marginBottom: '24px', borderBottom: '1px solid #e5e7eb', paddingBottom: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <button
+              className={styles.backButton}
+              onClick={handleCloseModal}
+              title="Volver"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', fontSize: '14px', color: '#6b7280', marginBottom: '4px', fontFamily: 'system-ui' }}>
+                <span style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }} onClick={() => navigate('/dashboard')}>
+                  <Home size={14} style={{ marginRight: 4 }} /> Inicio
+                </span>
+                <span style={{ margin: '0 8px' }}>/</span>
+                <span style={{ cursor: 'pointer' }} onClick={handleCloseModal}>Residentes</span>
+                <span style={{ margin: '0 8px' }}>/</span>
+                <span style={{ color: '#111827', fontWeight: 600 }}>{isEditing ? 'Editar' : 'Crear'} Registro</span>
+              </div>
+              <h2 style={{ fontSize: '24px', fontWeight: 600, color: '#111827', margin: 0 }}>
+                {isEditing ? 'Editar Residente' : 'Crear Residente'}
+              </h2>
             </div>
-            <h2 style={{ fontSize: '24px', fontWeight: 600, color: '#111827', margin: 0 }}>
-              {isEditing ? 'Editar Usuario' : 'Crear Usuario'}
-            </h2>
           </div>
             <AddUserModal
               onSubmit={handleSubmit}
@@ -548,7 +571,11 @@ const Users: React.FC = () => {
                 email: currentUser.email,
                 role: currentUser.role,
                 departmentId: currentUser.departmentId,
-                employeeNumber: currentUser.employeeNumber
+                department: currentUser.department,
+                employeeNumber: currentUser.employeeNumber,
+                phone: currentUser.phone || currentUser.cargo || '',
+                isActive: currentUser.isActive,
+                createdAt: currentUser.createdAt
               } : {}}
             />
           </div>

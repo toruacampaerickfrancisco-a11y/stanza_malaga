@@ -5,9 +5,9 @@ import Modal from '../components/Modal';
 import AddInsumoModal from '../components/AddInsumoModal';
 import { Search, FileSpreadsheet, Columns, Edit, Trash2, ArrowLeft, History, Home } from 'lucide-react';
 import { exportToExcel } from '../utils/exportUtils';
-import axios from 'axios';
+import { apiClient } from '../services/apiClient';
 import Table from '../components/Table';
-import styles from './Equipment.module.css';
+import styles from './Insumos.module.css';
 import Layout from '../components/Layout';
 import { showSuccess, showError, showConfirm } from '../utils/swal';
 import { useAuth } from '../hooks/useAuth';
@@ -20,7 +20,7 @@ const Insumos = () => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [loadingForm, setLoadingForm] = useState(false);
-  const [form, setForm] = useState({ nombre: '', descripcion: '', cantidad: 0, unidad: '', ubicacion: '' });
+  const [form, setForm] = useState({ nombre: '', descripcion: '', cantidad: 0, unidad: 'Visita', ubicacion: '' });
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({ unidad: '', ubicacion: '' });
@@ -36,13 +36,13 @@ const Insumos = () => {
 
   useEffect(() => {
     fetchInsumos();
-  }, []); // Fetch initially, filters will be applied client-side for now
+  }, []);
 
   async function fetchInsumos() {
     setLoading(true);
     try {
       const token = sessionStorage.getItem('authToken');
-      const response = await axios.get('/api/insumos', {
+      const response = await apiClient.get('/insumos', {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
 
@@ -55,17 +55,13 @@ const Insumos = () => {
       }
       setError('');
     } catch (err) {
-      console.error("Error fetching insumos:", err);
+      console.error("Error fetching access log:", err);
       setInsumos([]);
-      setError('Error al cargar los insumos');
+      setError('Error al cargar la bitácora de entradas');
     } finally {
       setLoading(false);
     }
   }
-
-  const handleChange = e => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
 
   const handleEdit = (id) => {
     const insumo = insumos.find(i => i.id === id);
@@ -83,17 +79,17 @@ const Insumos = () => {
   };
 
   const handleDelete = async (id) => {
-    if (await showConfirm('¿Eliminar insumo?', '¿Está seguro de que desea eliminar este insumo?')) {
+    if (await showConfirm('¿Eliminar registro?', '¿Está seguro de que desea eliminar este registro de acceso?')) {
       try {
         const token = sessionStorage.getItem('authToken');
-        await axios.delete(`/api/insumos/${id}`, {
+        await apiClient.delete(`/insumos/${id}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         fetchInsumos();
-        await showSuccess('Eliminado', 'Insumo eliminado correctamente.');
+        await showSuccess('Eliminado', 'Registro eliminado correctamente.');
       } catch (err) {
-        console.error("Error deleting insumo:", err);
-        await showError('Error', 'Error al eliminar el insumo');
+        console.error("Error deleting entry:", err);
+        await showError('Error', 'Error al eliminar el registro de acceso');
       }
     }
   };
@@ -105,26 +101,35 @@ const Insumos = () => {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
       if (editId) {
-        await axios.put(`/api/insumos/${editId}`, formData, { headers });
+        await apiClient.put(`/insumos/${editId}`, formData, { headers });
       } else {
-        await axios.post('/api/insumos', formData, { headers });
+        await apiClient.post('/insumos', formData, { headers });
       }
 
       fetchInsumos();
       setShowForm(false);
       setEditId(null);
-      setForm({ nombre: '', descripcion: '', cantidad: 0, unidad: '', ubicacion: '' });
-      await showSuccess('Éxito', 'Insumo guardado correctamente.');
+      setForm({ nombre: '', descripcion: '', cantidad: 0, unidad: 'Visita', ubicacion: '' });
+      await showSuccess('Éxito', 'Registro de entrada guardado correctamente.');
     } catch (err) {
-      console.error("Error saving insumo:", err);
-      await showError('Error', 'Error al guardar el insumo');
+      console.error("Error saving entry:", err);
+      await showError('Error', 'Error al guardar el registro de entrada');
     } finally {
       setLoadingForm(false);
     }
   };
 
   const handleExport = () => {
-    exportToExcel(filteredInsumos, 'Insumos');
+    const dataToExport = filteredInsumos.map(item => ({
+      'Visitante / Conductor': item.nombre,
+      'Motivo / Placas': item.descripcion,
+      'Acompañantes': item.cantidad,
+      'Tipo de Acceso': item.unidad,
+      'Destino / Lote': item.ubicacion,
+      'Última Entrada': item.last_entry ? new Date(item.last_entry).toLocaleString() : '-',
+      'Última Salida': item.last_exit ? new Date(item.last_exit).toLocaleString() : '-'
+    }));
+    exportToExcel(dataToExport, 'Bitacora_Entradas');
   };
 
   const handleViewHistory = async (item) => {
@@ -135,15 +140,15 @@ const Insumos = () => {
     
     try {
       const token = sessionStorage.getItem('authToken');
-      const response = await axios.get(`/api/insumos/${item.id}/history`, {
+      const response = await apiClient.get(`/insumos/${item.id}/history`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
       if (response.data && response.data.success) {
         setHistoryData(response.data.data);
       }
     } catch (err) {
-      console.error("Error fetching history:", err);
-      await showError('Error', 'No se pudo cargar el historial');
+      console.error("Error fetching visitor history:", err);
+      await showError('Error', 'No se pudo cargar el historial de accesos');
     } finally {
       setLoadingHistory(false);
     }
@@ -157,19 +162,17 @@ const Insumos = () => {
     }
   };
 
-  // Listas para filtros (derivadas de los datos o estáticas)
   const unidades = [...new Set(insumos.map(i => i.unidad).filter(Boolean))];
   const ubicaciones = [...new Set(insumos.map(i => i.ubicacion).filter(Boolean))];
 
-  // Definición de columnas
   const allColumns = [
-    { key: 'nombre', label: 'Nombre' },
-    { key: 'descripcion', label: 'Descripción' },
-    { key: 'cantidad', label: 'Cantidad' },
-    { key: 'unidad', label: 'Unidad' },
-    { key: 'ubicacion', label: 'Ubicación' },
-    { key: 'last_entry', label: 'Última Entrada' },
-    { key: 'last_exit', label: 'Última Salida' },
+    { key: 'nombre', label: 'Visitante / Conductor' },
+    { key: 'descripcion', label: 'Motivo / Placas' },
+    { key: 'cantidad', label: 'Acompañantes' },
+    { key: 'unidad', label: 'Tipo de Acceso' },
+    { key: 'ubicacion', label: 'Destino / Lote' },
+    { key: 'last_entry', label: 'Entrada' },
+    { key: 'last_exit', label: 'Salida' },
     { key: 'actions', label: 'Acciones' }
   ];
 
@@ -210,7 +213,7 @@ const Insumos = () => {
           key: col.key,
           render: (item) => (
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={() => handleViewHistory(item)} className="btn-icon" style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#6b7280' }} title="Ver Historial">
+              <button onClick={() => handleViewHistory(item)} className="btn-icon" style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#6b7280' }} title="Historial de Accesos">
                 <History size={18} />
               </button>
               <button onClick={() => handleEdit(item.id)} className="btn-icon" style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#2563eb' }} title="Editar">
@@ -226,7 +229,6 @@ const Insumos = () => {
       return { label: col.label, key: col.key };
     });
 
-  // Filtrado por búsqueda y filtros de selección
   const filteredInsumos = insumos.filter(item => {
     const s = search.toLowerCase();
     const matchesSearch = 
@@ -241,7 +243,7 @@ const Insumos = () => {
     return matchesSearch && matchesUnidad && matchesUbicacion;
   });
 
-  if (loadingPerms) return null; // O un spinner
+  if (loadingPerms) return null;
 
   if (!canView('supplies')) {
     return (
@@ -264,33 +266,21 @@ const Insumos = () => {
       <div className={styles.pageWrapper}>
         {!showForm && !showHistory && (
         <>
-        <div className={styles.headerRow} style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div className={styles.headerRow}>
           <button 
             onClick={() => navigate('/dashboard')} 
-            style={{ 
-              background: 'white', 
-              border: '1px solid #e5e7eb', 
-              borderRadius: '8px', 
-              padding: '8px', 
-              cursor: 'pointer', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              color: '#374151',
-              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-              transition: 'all 0.2s'
-            }}
+            className={styles.backButton}
             title="Volver al Panel Principal"
           >
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h1 className={styles.pageTitle}>Gestión de Insumos</h1>
+            <h1 className={styles.pageTitle}>Entradas a la Cerrada</h1>
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginLeft: 'auto' }}>
-            <button className={styles.btnAgregar} onClick={() => { setShowForm(true); setEditId(null); setForm({ nombre: '', descripcion: '', cantidad: 0, unidad: '', ubicacion: '' }); }}>
+            <button className={styles.btnAgregar} onClick={() => { setShowForm(true); setEditId(null); setForm({ nombre: '', descripcion: '', cantidad: 0, unidad: 'Visita', ubicacion: '' }); }}>
               <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" style={{ marginRight: 6 }}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-              Agregar
+              Registrar Entrada
             </button>
           </div>
         </div>
@@ -299,34 +289,39 @@ const Insumos = () => {
         <div style={{ background: 'white', padding: 16, borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, alignItems: 'end' }}>
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label">Unidad</label>
+              <label className="form-label">Tipo de Acceso</label>
               <select
                 className="form-select"
                 value={filters.unidad}
                 onChange={e => setFilters({ ...filters, unidad: e.target.value })}
                 style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #d1d5db' }}
               >
-                <option value="">Todas</option>
+                <option value="">Todos</option>
                 {unidades.map(u => <option key={u} value={u}>{u}</option>)}
               </select>
             </div>
 
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label">Ubicación</label>
+              <label className="form-label">Destino / Lote</label>
               <select
                 className="form-select"
                 value={filters.ubicacion}
                 onChange={e => setFilters({ ...filters, ubicacion: e.target.value })}
                 style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #d1d5db' }}
               >
-                <option value="">Todas</option>
+                <option value="">Todos</option>
                 {ubicaciones.map(u => <option key={u} value={u}>{u}</option>)}
               </select>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              {(user?.role === 'admin' || user?.role === 'tecnico' || user?.role === 'technician') && (
-                <button className="btn btn-outline" onClick={handleExport} style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#107c41', borderColor: '#107c41', background: 'white', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer' }} title="Exportar a Excel">
+              {['admin', 'presidente', 'vicepresidente'].includes(user?.role) && (
+                <button
+                  className={`${styles.btnExcel} btn btn-outline`}
+                  onClick={handleExport}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#107c41', borderColor: '#107c41', background: 'white', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer' }}
+                  title="Exportar a Excel"
+                >
                   <FileSpreadsheet size={20} />
                   Excel
                 </button>
@@ -343,7 +338,7 @@ const Insumos = () => {
             <input
               className={styles.searchInput}
               type="text"
-              placeholder="Buscar insumos..."
+              placeholder="Buscar por visitante, placas, motivo o lote..."
               value={search}
               onChange={e => setSearch(e.target.value)}
               style={{ width: '100%', paddingLeft: 40, height: '48px', fontSize: '1rem' }}
@@ -383,19 +378,28 @@ const Insumos = () => {
 
         {showForm && (
           <div style={{ background: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
-             <div style={{ marginBottom: '24px', borderBottom: '1px solid #e5e7eb', paddingBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', fontSize: '14px', color: '#6b7280', marginBottom: '8px', fontFamily: 'system-ui' }}>
-                  <span style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }} onClick={() => navigate('/dashboard')}>
-                     <Home size={14} style={{ marginRight: 4 }} /> Inicio
-                  </span>
-                  <span style={{ margin: '0 8px' }}>/</span>
-                  <span style={{ cursor: 'pointer' }} onClick={() => setShowForm(false)}>Insumos</span>
-                  <span style={{ margin: '0 8px' }}>/</span>
-                  <span style={{ color: '#111827', fontWeight: 600 }}>{editId ? 'Editar' : 'Agregar'} Insumo</span>
+             <div style={{ marginBottom: '24px', borderBottom: '1px solid #e5e7eb', paddingBottom: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <button
+                  className={styles.backButton}
+                  onClick={() => { setShowForm(false); setEditId(null); }}
+                  title="Volver"
+                >
+                  <ArrowLeft size={20} />
+                </button>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', fontSize: '14px', color: '#6b7280', marginBottom: '4px', fontFamily: 'system-ui' }}>
+                    <span style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }} onClick={() => navigate('/dashboard')}>
+                       <Home size={14} style={{ marginRight: 4 }} /> Inicio
+                    </span>
+                    <span style={{ margin: '0 8px' }}>/</span>
+                    <span style={{ cursor: 'pointer' }} onClick={() => setShowForm(false)}>Entradas</span>
+                    <span style={{ margin: '0 8px' }}>/</span>
+                    <span style={{ color: '#111827', fontWeight: 600 }}>{editId ? 'Editar' : 'Registrar'} Entrada</span>
+                  </div>
+                  <h2 style={{ fontSize: '24px', fontWeight: 600, color: '#111827', margin: 0 }}>
+                    {editId ? 'Editar Registro de Entrada' : 'Registrar Entrada'}
+                  </h2>
                 </div>
-                <h2 style={{ fontSize: '24px', fontWeight: 600, color: '#111827', margin: 0 }}>
-                  {editId ? 'Editar Insumo' : 'Agregar Insumo'}
-                </h2>
               </div>
           <AddInsumoModal
             onSubmit={handleSubmit}
@@ -409,33 +413,42 @@ const Insumos = () => {
 
         {showHistory && (
           <div style={{ background: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
-            <div style={{ marginBottom: '24px', borderBottom: '1px solid #e5e7eb', paddingBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', fontSize: '14px', color: '#6b7280', marginBottom: '8px', fontFamily: 'system-ui' }}>
-                  <span style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }} onClick={() => navigate('/dashboard')}>
-                     <Home size={14} style={{ marginRight: 4 }} /> Inicio
-                  </span>
-                  <span style={{ margin: '0 8px' }}>/</span>
-                  <span style={{ cursor: 'pointer' }} onClick={() => setShowHistory(false)}>Insumos</span>
-                  <span style={{ margin: '0 8px' }}>/</span>
-                  <span style={{ color: '#111827', fontWeight: 600 }}>Historial</span>
+            <div style={{ marginBottom: '24px', borderBottom: '1px solid #e5e7eb', paddingBottom: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <button
+                  className={styles.backButton}
+                  onClick={() => setShowHistory(false)}
+                  title="Volver"
+                >
+                  <ArrowLeft size={20} />
+                </button>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', fontSize: '14px', color: '#6b7280', marginBottom: '4px', fontFamily: 'system-ui' }}>
+                    <span style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }} onClick={() => navigate('/dashboard')}>
+                       <Home size={14} style={{ marginRight: 4 }} /> Inicio
+                    </span>
+                    <span style={{ margin: '0 8px' }}>/</span>
+                    <span style={{ cursor: 'pointer' }} onClick={() => setShowHistory(false)}>Entradas</span>
+                    <span style={{ margin: '0 8px' }}>/</span>
+                    <span style={{ color: '#111827', fontWeight: 600 }}>Historial</span>
+                  </div>
+                  <h2 style={{ fontSize: '24px', fontWeight: 600, color: '#111827', margin: 0 }}>
+                    Historial de Accesos: {selectedInsumoName}
+                  </h2>
                 </div>
-                <h2 style={{ fontSize: '24px', fontWeight: 600, color: '#111827', margin: 0 }}>
-                  Historial de Asignaciones: {selectedInsumoName}
-                </h2>
             </div>
           {loadingHistory ? (
             <p>Cargando historial...</p>
           ) : historyData.length === 0 ? (
-            <p>No hay historial de asignaciones para este insumo.</p>
+            <p>No hay historial de accesos para este visitante.</p>
           ) : (
             <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid #e5e7eb', textAlign: 'left' }}>
                     <th style={{ padding: '8px' }}>Fecha</th>
-                    <th style={{ padding: '8px' }}>Ticket</th>
-                    <th style={{ padding: '8px' }}>Título</th>
-                    <th style={{ padding: '8px', textAlign: 'right' }}>Cantidad</th>
+                    <th style={{ padding: '8px' }}>Reservación / Evento</th>
+                    <th style={{ padding: '8px' }}>Detalles / Concepto</th>
+                    <th style={{ padding: '8px', textAlign: 'right' }}>Acompañantes</th>
                   </tr>
                 </thead>
                 <tbody>

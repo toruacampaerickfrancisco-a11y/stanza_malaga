@@ -36,10 +36,28 @@ const testConnection = async () => {
 // Función para sincronizar modelos
 const syncDatabase = async (force = false) => {
   try {
-    await sequelize.sync({ force });
-    logger.info(force ? 'Base de datos recreada y sincronizada' : 'Base de datos sincronizada');
+    await sequelize.sync({ force, alter: true });
+    logger.info(force ? 'Base de datos recreada y sincronizada' : 'Base de datos sincronizada (alter=true)');
   } catch (error) {
     logger.error(`Error al sincronizar la base de datos: ${error.message}`);
+    
+    // Auto-reparación para PostgreSQL si hay conflicto de tipos ARRAY
+    if (config.database.dialect === 'postgres') {
+      logger.warn('⚠️ Se detectó un error de sincronización en PostgreSQL. Intentando auto-reparación de columnas ARRAY...');
+      try {
+        await sequelize.query('ALTER TABLE "tickets" DROP COLUMN IF EXISTS "attachments";');
+        await sequelize.query('ALTER TABLE "tickets" DROP COLUMN IF EXISTS "tags";');
+        await sequelize.query('ALTER TABLE "tickets" DROP COLUMN IF EXISTS "parts";');
+        logger.info('✅ Columnas conflictivas eliminadas. Reintentando sincronización...');
+        
+        await sequelize.sync({ force, alter: true });
+        logger.info('🎉 Base de datos sincronizada exitosamente después de la auto-reparación.');
+        return;
+      } catch (repairError) {
+        logger.error(`❌ La auto-reparación falló: ${repairError.message}`);
+      }
+    }
+    
     throw error;
   }
 };

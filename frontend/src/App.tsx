@@ -1,6 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from '@/hooks/useAuth';
+import { AuthProvider, useAuth } from '@/hooks/useAuth.tsx';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { SessionTimeout } from '@/components/SessionTimeout';
 import Login from '@/pages/Login';
@@ -16,6 +16,7 @@ import Unauthorized from '@/pages/Unauthorized';
 import NotFound from '@/pages/NotFound';
 import Insumos from '@/pages/Insumos';
 import ActivitiesPage from '@/pages/Activities';
+import CalendarPage from '@/pages/Calendar';
 // ...existing code...
 
 const HomeRedirect = () => {
@@ -27,12 +28,20 @@ const HomeRedirect = () => {
     return <Navigate to="/login" replace />;
   }
 
-  if (user?.role === 'usuario' || user?.role === 'user') {
-    return <Navigate to="/tickets" replace />;
+  if (user?.role === 'usuario' || user?.role === 'user' || user?.role === 'residente') {
+    return <Navigate to="/calendario" replace />;
   }
   
-  if (user?.role === 'inventario') {
-    return <Navigate to="/equipos" replace />;
+  if (user?.role === 'guardia') {
+    return <Navigate to="/insumos" replace />;
+  }
+
+  if (user?.role === 'eventos') {
+    return <Navigate to="/calendario" replace />;
+  }
+
+  if (user?.role === 'tesorero') {
+    return <Navigate to="/reportes" replace />;
   }
 
   return <Navigate to="/dashboard" replace />;
@@ -88,7 +97,7 @@ const AppContent: React.FC = () => {
             }
           />
 
-          {/* Catálogo de departamentos */}
+          {/* Catálogo de áreas/eventos */}
           <Route
             path="/departamentos"
             element={
@@ -127,6 +136,19 @@ const AppContent: React.FC = () => {
             }
           />
 
+          {/* Calendario de Reservaciones - Requiere permiso de vista de tickets */}
+          <Route
+            path="/calendario"
+            element={
+              <ProtectedRoute 
+                requiredModule="tickets" 
+                requiredAction="view"
+              >
+                <CalendarPage />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Reportes - Requiere permiso de vista de reportes */}
           <Route
             path="/reportes"
@@ -144,7 +166,7 @@ const AppContent: React.FC = () => {
           <Route
             path="/actividades"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'tecnico']}>
+              <ProtectedRoute allowedRoles={['admin', 'presidente', 'vicepresidente']}>
                 <ActivitiesPage />
               </ProtectedRoute>
             }

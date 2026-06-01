@@ -1,44 +1,163 @@
-/* Copia de estilos de Users.module.css para Insumos */
-.filtersRow {
+.pageWrapper {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 16px 24px 0 24px;
+  box-sizing: border-box;
+}
+
+.headerRow {
   display: flex;
-  gap: 24px;
-  margin-bottom: 12px;
-  align-items: flex-end;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
 }
-.filterGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.filterLabel {
-  font-size: 0.95rem;
-  color: #888;
-  margin-bottom: 2px;
-}
-.filterSelect {
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid #e0e0e0;
-  background: #fafafa;
-  font-size: 1rem;
-}
-.exportButton {
-  background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 22px;
-  font-size: 1rem;
+
+.pageTitle {
+  margin: 0;
+  color: #111827;
+  font-size: 2rem;
   font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(67,233,123,0.08);
+}
+
+.btnAgregar {
+  background-color: #198754;
+  color: white;
+  border: none;
+  border-radius: 50px;
+  padding: 8px 20px;
+  font-size: 0.95rem;
+  font-weight: 500;
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-left: auto;
-  transition: background 0.2s;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
-.exportButton:hover {
-  background: linear-gradient(90deg, #11998e 0%, #38ef7d 100%);
+
+.btnAgregar:hover {
+  background-color: #157347;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.15);
 }
-/* Puedes agregar más estilos según lo necesites */
+
+.searchInput {
+  width: 100%;
+  padding: 12px 16px 12px 44px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: #fff;
+  transition: all 0.2s;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.searchInput:focus {
+  border-color: #2563eb;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1), inset 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.columnSelector {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  z-index: 50;
+  min-width: 200px;
+  margin-top: 8px;
+}
+
+.columnSelector h3 {
+  margin: 0 0 12px 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.columnOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.875rem;
+  color: #4b5563;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.columnOption:hover {
+  color: #111827;
+}
+
+.backButton {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #374151;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.2s;
+  min-width: 40px;
+  height: 40px;
+}
+
+.backButton:hover {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+  color: #111827;
+}
+
+@media (max-width: 768px) {
+  .pageWrapper {
+    padding: 12px 16px;
+  }
+
+  .headerRow {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1.5rem;
+  }
+
+  .pageTitle {
+    font-size: 1.25rem;
+  }
+
+  .btnAgregar {
+    position: fixed;
+    bottom: 85px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 28px;
+    padding: 0;
+    justify-content: center;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(25, 135, 84, 0.4);
+    font-size: 0;
+  }
+
+  .btnAgregar svg {
+    margin: 0;
+    width: 24px;
+    height: 24px;
+  }
+
+  .btnExcel {
+    display: none !important;
+  }
+}

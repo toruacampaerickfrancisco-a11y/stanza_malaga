@@ -240,10 +240,27 @@ export const requirePermission = (module, action) => {
         const role = ((user.rol || user.role || '') + '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         const rolePermissionsFallback = {
           admin: [{ module: module, actions: ['view', 'create', 'edit', 'delete'] }],
+          presidente: [{ module: module, actions: ['view', 'create', 'edit', 'delete'] }],
+          vicepresidente: [{ module: module, actions: ['view', 'create', 'edit', 'delete'] }],
           tecnico: [
             { module: 'tickets', actions: ['view', 'create', 'edit'] },
             { module: 'supplies', actions: ['view', 'create', 'edit'] },
             { module: 'equipment', actions: ['view', 'create', 'edit'] }
+          ],
+          tesorero: [
+            { module: 'equipment', actions: ['view', 'create', 'edit', 'delete'] },
+            { module: 'reports', actions: ['view', 'create', 'edit', 'delete'] },
+            { module: 'dashboard', actions: ['view', 'create', 'edit', 'delete'] },
+            { module: 'tickets', actions: ['view', 'create'] }
+          ],
+          eventos: [
+            { module: 'tickets', actions: ['view', 'create', 'edit', 'delete', 'assign'] },
+            { module: 'users', actions: ['view', 'create', 'edit', 'delete'] },
+            { module: 'profile', actions: ['view', 'edit'] }
+          ],
+          guardia: [
+            { module: 'supplies', actions: ['view', 'create', 'edit', 'delete'] },
+            { module: 'profile', actions: ['view', 'edit'] }
           ],
           inventario: [
             { module: 'supplies', actions: ['view', 'create', 'edit', 'delete'] },
@@ -254,6 +271,10 @@ export const requirePermission = (module, action) => {
             { module: 'profile', actions: ['view', 'edit'] }
           ],
           user: [
+            { module: 'tickets', actions: ['view', 'create'] },
+            { module: 'profile', actions: ['view', 'edit'] }
+          ],
+          residente: [
             { module: 'tickets', actions: ['view', 'create'] },
             { module: 'profile', actions: ['view', 'edit'] }
           ]

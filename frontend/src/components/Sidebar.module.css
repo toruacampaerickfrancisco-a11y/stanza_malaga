@@ -53,6 +53,13 @@
   flex: 1;
 }
 
+.logoImage {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
 .logoIcon {
   font-size: 2rem;
   background: linear-gradient(45deg, var(--color-primary), var(--color-secondary));
@@ -374,20 +381,15 @@
 /* Responsive design */
 @media (max-width: 1024px) {
   .sidebar {
-    transform: translateX(-100%);
-    transition: transform var(--transition-base);
-  }
-  
-  .sidebar.mobileOpen {
-    transform: translateX(0);
+    display: none !important; /* Escondemos el sidebar lateral en móviles */
   }
   
   .mobileMenuButton {
-    display: flex;
+    display: none !important; /* Escondemos el botón de hamburguesa */
   }
   
   .mobileOverlay {
-    display: block;
+    display: none !important;
   }
   
   .closeButton {

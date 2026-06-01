@@ -127,7 +127,7 @@ const PermissionsPage: React.FC = () => {
           'Nombre Completo': user.fullName,
           'Usuario': user.username,
           'Rol': user.role,
-          'Departamento': user.department || '-',
+          'Área / Espacio': user.department || '-',
           'Permisos': permissionCount,
           'Estado': user.isActive ? 'ACTIVO' : 'INACTIVO'
         };
@@ -225,13 +225,13 @@ const PermissionsPage: React.FC = () => {
   const getModuleBadge = (module: PermissionModule) => {
     const moduleConfig: Record<string, { label: string; class: string }> = {
       dashboard: { label: 'Dashboard', class: styles.moduleDashboard },
-      users: { label: 'Usuarios', class: styles.moduleUsers },
-      equipment: { label: 'Equipos', class: styles.moduleEquipment },
-      tickets: { label: 'Tickets', class: styles.moduleTickets },
+      users: { label: 'Residentes / Usuarios', class: styles.moduleUsers },
+      equipment: { label: 'Cuotas de Mantto.', class: styles.moduleEquipment },
+      tickets: { label: 'Reservaciones', class: styles.moduleTickets },
       reports: { label: 'Reportes', class: styles.moduleReports },
       profile: { label: 'Perfil', class: styles.moduleProfile },
       permissions: { label: 'Permisos', class: styles.modulePermissions },
-      supplies: { label: 'Insumos', class: styles.moduleSupplies }
+      supplies: { label: 'Bitácora de Accesos', class: styles.moduleSupplies }
     };
     
     const config = moduleConfig[module] || { label: module, class: '' };
@@ -255,13 +255,13 @@ const PermissionsPage: React.FC = () => {
   const getModuleLabel = (module: string) => {
     const labels: Record<string, string> = {
       dashboard: 'Dashboard',
-      users: 'Usuarios',
-      equipment: 'Equipos',
-      tickets: 'Tickets',
+      users: 'Residentes / Usuarios',
+      equipment: 'Recaudación de Cuotas',
+      tickets: 'Reservación de Áreas',
       reports: 'Reportes',
       profile: 'Perfil',
       permissions: 'Permisos',
-      supplies: 'Insumos'
+      supplies: 'Bitácora de Accesos'
     };
     return labels[module] || module;
   };
@@ -313,7 +313,7 @@ const PermissionsPage: React.FC = () => {
     },
     {
       key: 'department',
-      label: 'Departamento',
+      label: 'Área / Espacio',
       render: (user: UserWithPermissions) => user.department || '-'
     },
     {
@@ -434,7 +434,7 @@ const PermissionsPage: React.FC = () => {
                </div>
 
                <div className="form-group" style={{ marginBottom: 0 }}>
-                 <label className="form-label">Departamento</label>
+                 <label className="form-label">Área / Espacio</label>
                  <select 
                     className="form-select"
                     value={filterDepartment}
@@ -454,14 +454,14 @@ const PermissionsPage: React.FC = () => {
                     value={filterModule}
                     onChange={(e) => setFilterModule(e.target.value as PermissionModule | 'all')}
                   >
-                    <option value="all">Todos</option>
-                    <option value="dashboard">Dashboard</option>
-                    <option value="users">Usuarios</option>
-                    <option value="equipment">Equipos</option>
-                    <option value="tickets">Tickets</option>
-                    <option value="reports">Reportes</option>
-                    <option value="permissions">Permisos</option>
-                    <option value="supplies">Insumos</option>
+                     <option value="all">Todos</option>
+                     <option value="dashboard">Dashboard</option>
+                     <option value="users">Residentes / Usuarios</option>
+                     <option value="equipment">Recaudación de Cuotas</option>
+                     <option value="tickets">Reservaciones</option>
+                     <option value="reports">Reportes</option>
+                     <option value="permissions">Permisos</option>
+                     <option value="supplies">Bitácora de Accesos</option>
                   </select>
                </div>
              </div>
@@ -618,7 +618,7 @@ const PermissionsPage: React.FC = () => {
                   disabled={saving}
                 >
                   <X size={16} />
-                  Cancelar
+                  Regresar
                 </button>
                 
                 <button
@@ -660,23 +660,23 @@ const PermissionsPage: React.FC = () => {
                   <p>Todos los permisos del sistema</p>
                 </div>
                 
-                <div
-                  className={styles.roleCard}
-                  onClick={() => handleApplyRoleTemplate('tecnico')}
-                >
-                  <Key size={24} />
-                  <h3>Técnico</h3>
-                  <p>Permisos para gestión de equipos y tickets</p>
-                </div>
-                
-                <div
-                  className={styles.roleCard}
-                  onClick={() => handleApplyRoleTemplate('usuario')}
-                >
-                  <Users size={24} />
-                  <h3>Usuario Final</h3>
-                  <p>Permisos básicos de consulta y perfil</p>
-                </div>
+                 <div
+                   className={styles.roleCard}
+                   onClick={() => handleApplyRoleTemplate('tecnico')}
+                 >
+                   <Key size={24} />
+                   <h3>Tesorero</h3>
+                   <p>Permisos para gestión de recaudación y bitácora de accesos</p>
+                 </div>
+                 
+                 <div
+                   className={styles.roleCard}
+                   onClick={() => handleApplyRoleTemplate('usuario')}
+                 >
+                   <Users size={24} />
+                   <h3>Residente</h3>
+                   <p>Permisos básicos de consulta, reservas y perfil</p>
+                 </div>
               </div>
               
               {saving && (

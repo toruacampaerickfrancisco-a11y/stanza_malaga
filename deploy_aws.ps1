@@ -1,71 +1,70 @@
-# Script de despliegue FINAL para AWS (Copia Frontend a Backend)
-$pemFile = "bienestaradmin.pem"
-$ip = "3.16.15.109"
+# Script de despliegue para AWS EC2
+# Uso: .\deploy_aws.ps1 -ServerIP "X.X.X.X" -User "ubuntu"
 
-if (-not (Test-Path $pemFile)) {
-    Write-Host "No encuentro la llave $pemFile"
-    exit
-}
+param (
+    [string]$ServerIP = "100.109.99.110", # IP de Tailscale por defecto si está disponible
+    [string]$User = "ubuntu",
+    [string]$KeyFile = "id_rsa_erp_auto"
+)
 
-# Usamos comillas SIMPLES para las variables de entorno de Linux
-$scriptBlock = @'
-    export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games
+Write-Host "Iniciando despliegue a AWS EC2 ($ServerIP)..." -ForegroundColor Cyan
 
-    # 1. Directorio y Actualización
-    if [ ! -d "sistema-matenimiento" ]; then
-        git clone https://github.com/toruacampaerickfrancisco-a11y/sistema-matenimiento.git
+# Comandos a ejecutar remotamente
+$RemoteScript = @'
+    set -e # Detener si hay error
+
+    # 1. Definir Rutas
+    REPO_DIR="$HOME/stanza-malaga-app"
+    BACKEND_DEST="/var/www/stanza-api"
+    FRONTEND_DEST="/var/www/stanza-app"
+
+    echo "--- [1/5] Actualizando Repositorio ---"
+    if [ ! -d "$REPO_DIR" ]; then
+        git clone https://github.com/toruacampaerickfrancisco-a11y/stanza_malaga.git "$REPO_DIR"
     fi
-    cd sistema-matenimiento
 
-    echo '--- RESETEANDO REPOSITORIO (Hard Reset) ---'
+    cd "$REPO_DIR"
     git fetch --all
     git reset --hard origin/main
-    # Limpiar solo si hay conflictos graves, pero --hard debería bastar y es más seguro
-    # git clean -fd
 
-    # 2. Frontend BUILD
-    echo '--- CONSTRUYENDO FRONTEND ---'
+    echo "--- [2/5] Construyendo Frontend ---"
     cd frontend
     npm install
-    # Limpiamos build anterior
-    rm -rf dist
+    export VITE_API_URL="/api"
     npm run build
     cd ..
 
-    # 3. MIGRAR FRONTEND A BACKEND (PASO CRITICO FALTANTE)
-    echo '--- COPIANDO FRONTEND A BACKEND/PUBLIC ---'
-    # Asegurar que el directorio destino existe y está vacío
-    mkdir -p backend/public
-    # Borramos contenido viejo en public (cuidado de no borrar cosas que no sean del build si las hubiera, 
-    # pero normalmente public solo tiene el build)
-    rm -rf backend/public/*
-    
-    # Copiar contenido de dist a public
-    cp -r frontend/dist/* backend/public/
-    echo "Archivos copiados: $(ls backend/public | wc -l)"
+    echo "--- [3/5] Desplegando Frontend ---"
+    echo "Copiando archivos estáticos a $FRONTEND_DEST..."
+    sudo mkdir -p "$FRONTEND_DEST"
+    sudo rm -rf "$FRONTEND_DEST"/*
+    sudo cp -r frontend/dist/* "$FRONTEND_DEST/"
 
-    # 4. Backend START
-    echo '--- REINICIANDO BACKEND ---'
-    cd backend
-    npm install --omit=dev
-    
-    # Aseguramos que use el puerto correcto si no está en .env
-    # Pero el .env ya debería estar. Si no, lo creamos forzado.
-    if [ ! -f .env ]; then
-        echo "PORT=30001" > .env
-        echo "HOST=0.0.0.0" >> .env
-        echo "NODE_ENV=production" >> .env
-    fi
+    echo "--- [4/5] Desplegando Backend ---"
+    echo "Preparando $BACKEND_DEST..."
+    sudo mkdir -p "$BACKEND_DEST"
+    sudo cp -r backend/* "$BACKEND_DEST/"
+    sudo cp backend/.sequelizerc "$BACKEND_DEST/" || true
 
-    pm2 restart all || pm2 start server.js --name 'sistema-erp'
-    pm2 save
+    cd "$BACKEND_DEST"
+    echo "Instalando dependencias..."
+    sudo npm install --omit=dev
 
-    echo '--- DESPLIEGUE FINALIZADO CORRECTAMENTE ---'
+    echo "--- [DB] Ejecutando Migraciones ---"
+    # Asegurarse de que las variables de entorno de DB estén configuradas en el servidor o un archivo .env
+    # npx sequelize-cli db:migrate
+
+    echo "--- [5/5] Reiniciando Servicios ---"
+    # Reiniciar con PM2
+    sudo pm2 delete stanza-api 2> /dev/null || true
+    sudo pm2 start src/app.js --name 'stanza-api' --cwd "$BACKEND_DEST" --update-env
+    sudo pm2 save
+
+    echo "--- DESPLIEGUE COMPLETADO ---"
 '@
 
 # Limpiar CR
-$linuxScript = $scriptBlock.Replace("`r", "")
+$RemoteScript = $RemoteScript.Replace("`r", "")
 
-Write-Host "Ejecutando despliegue con COPIA DE ARCHIVOS en $ip..." -ForegroundColor Green
-
-ssh -i $pemFile -o StrictHostKeyChecking=no ubuntu@$ip $linuxScript
+# Ejecutar vía SSH
+ssh -i $KeyFile -o StrictHostKeyChecking=no $User@$ServerIP "$RemoteScript"

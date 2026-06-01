@@ -6,29 +6,32 @@ const getNotificationsForUser = async (user) => {
   const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // Historial de 7 días para usuarios
 
-  // 1. Lógica para Técnicos y Administradores
-  if (user.rol === 'tecnico' || user.rol === 'admin' || user.role === 'tecnico' || user.role === 'admin' || user.role === 'technician') {
+  // 1. Lógica para Técnicos, Administradores y otros roles administrativos
+  const highLevelRoles = ['tecnico', 'admin', 'technician', 'presidente', 'vicepresidente', 'tesorero', 'eventos', 'guardia'];
+  const userRole = (user.rol || user.role || '').toLowerCase().trim();
+
+  if (highLevelRoles.includes(userRole)) {
     
-    // A. Recordatorio de Tickets Pendientes/Nuevos Antiguos (> 12 horas)
+    // A. Recordatorio de Reservas Solicitadas/Pendientes Antiguas (> 12 horas)
     const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
     const oldTickets = await Ticket.findAll({
       where: {
         status: {
-          [Op.in]: ['nuevo', 'pendiente']
+          [Op.in]: ['solicitado', 'confirmado']
         },
-        created_at: {
+        createdAt: {
           [Op.lt]: twelveHoursAgo
         }
       },
-      order: [['created_at', 'ASC']]
+      order: [['createdAt', 'ASC']]
     });
 
     oldTickets.forEach(ticket => {
       notifications.push({
         id: `reminder-${ticket.id}`,
         type: 'ticket_reminder',
-        title: `⚠️ Ticket Pendiente: ${ticket.ticket_number}`,
-        message: `El ticket "${ticket.title}" lleva más de 12 horas en estado ${ticket.status}.`,
+        title: `⚠️ Reserva Pendiente: ${ticket.ticket_number}`,
+        message: `La reserva "${ticket.title}" lleva más de 12 horas en estado ${ticket.status}.`,
         userId: user.id,
         ticketId: ticket.id,
         isRead: false,
@@ -36,67 +39,65 @@ const getNotificationsForUser = async (user) => {
       });
     });
 
-    // B. Alerta de Nuevos Tickets (< 24 horas)
+    // B. Alerta de Nuevas Reservas (< 24 horas)
     const newTickets = await Ticket.findAll({
       where: {
-        status: 'nuevo',
-        created_at: { [Op.gte]: twentyFourHoursAgo }
+        status: 'solicitado',
+        createdAt: { [Op.gte]: twentyFourHoursAgo }
       },
-      order: [['created_at', 'DESC']]
+      order: [['createdAt', 'DESC']]
     });
 
     newTickets.forEach(ticket => {
       notifications.push({
         id: `new-${ticket.id}`,
         type: 'ticket_new',
-        title: `🆕 Nuevo Ticket: ${ticket.ticket_number}`,
-        message: `Se ha reportado un nuevo ticket: "${ticket.title}".`,
+        title: `🆕 Nueva Reserva: ${ticket.ticket_number}`,
+        message: `Se ha solicitado una nueva reserva: "${ticket.title}".`,
         userId: user.id,
         ticketId: ticket.id,
         isRead: false,
-        createdAt: ticket.created_at || new Date()
+        createdAt: ticket.createdAt || new Date()
       });
     });
   }
 
-  // 2. Lógica para Usuarios (Reportantes)
-  const role = (user.rol || user.role || '').toLowerCase().trim();
-  if (['usuario', 'user', 'inventario'].includes(role)) {
+  // 2. Lógica para Usuarios (Reportantes) / Residentes
+  if (['usuario', 'user', 'inventario', 'residente'].includes(userRole)) {
     const updatedTickets = await Ticket.findAll({
       where: {
         reported_by_id: user.id,
         // status: { [Op.ne]: 'nuevo' }, // Eliminamos esta restricción para que vean sus tickets nuevos
-        updated_at: { [Op.gte]: sevenDaysAgo } // Usamos ventana de 7 días para historial
+        updatedAt: { [Op.gte]: sevenDaysAgo } // Usamos ventana de 7 días para historial
       },
-      order: [['updated_at', 'DESC']]
+      order: [['updatedAt', 'DESC']]
     });
 
     updatedTickets.forEach(ticket => {
       let statusText = ticket.status;
       // Formatear estatus para lectura amigable
-      if (statusText === 'nuevo') statusText = 'Nuevo (Recibido)';
-      else if (statusText === 'en_proceso') statusText = 'En Proceso';
-      else if (statusText === 'resuelto') statusText = 'Resuelto';
-      else if (statusText === 'cerrado') statusText = 'Cerrado';
-      else if (statusText === 'pendiente') statusText = 'Pendiente';
+      if (statusText === 'solicitado') statusText = 'Solicitado (Recibido)';
+      else if (statusText === 'confirmado') statusText = 'Confirmado';
+      else if (statusText === 'realizado') statusText = 'Realizado';
+      else if (statusText === 'cancelado') statusText = 'Cancelado';
       else statusText = statusText.charAt(0).toUpperCase() + statusText.slice(1);
 
       // Si es nuevo, el mensaje es diferente
-      const isNew = ticket.status === 'nuevo';
+      const isNew = ticket.status === 'solicitado';
       const title = isNew ? `✅ Ticket Recibido: ${ticket.ticket_number}` : `🛠️ Ticket Atendido: ${ticket.ticket_number}`;
       const message = isNew 
         ? `Su ticket "${ticket.title}" ha sido recibido exitosamente.`
         : `Su ticket "${ticket.title}" está siendo atendido. Nuevo estado: ${statusText}.`;
 
       notifications.push({
-        id: `update-${ticket.id}-${new Date(ticket.updated_at).getTime()}`,
+        id: `update-${ticket.id}-${new Date(ticket.updatedAt).getTime()}`,
         type: isNew ? 'ticket_created' : 'ticket_update',
         title: title,
         message: message,
         userId: user.id,
         ticketId: ticket.id,
         isRead: false,
-        createdAt: ticket.updated_at || new Date()
+        createdAt: ticket.updatedAt || new Date()
       });
     });
   }

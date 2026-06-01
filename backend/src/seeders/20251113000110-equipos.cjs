@@ -193,6 +193,21 @@ module.exports = {
         updatedAt: updated_at
       };
     });
+    // Agregar Tejaban Principal como área común fija
+    equipos.push({
+      id: '36b65adf-f5ac-4916-b89f-367598e6ebaa',
+      name: 'Tejaban Principal',
+      type: 'other',
+      brand: 'Área',
+      model: 'Común',
+      serial_number: 'TP-01',
+      inventory_number: '0.00',
+      status: 'available',
+      location: 'Área Común',
+      assigned_user_id: null,
+      createdAt: now,
+      updatedAt: now
+    });
     // await queryInterface.bulkDelete('equipment', null, {});
     await queryInterface.bulkInsert('equipment', equipos, {
       ignoreDuplicates: true

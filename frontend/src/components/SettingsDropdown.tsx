@@ -50,11 +50,11 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ onClose }) => {
         compactMode: false
       },
       company: {
-        name: 'Secretaría de Bienestar',
-        fullName: 'Secretaría de Bienestar del Estado de Sonora',
-        address: 'Hermosillo, Sonora, México',
-        phone: '+52 662 123 4567',
-        email: 'contacto@bienestar.sonora.gob.mx'
+        name: 'Stanza Malaga',
+        fullName: 'Mesa Directiva Stanza Malaga Sección Almería',
+        address: 'Stanza Malaga, Hermosillo, Sonora, México',
+        phone: '+52 662 000 0000',
+        email: 'contacto@stanzamalaga.com'
       }
     };
   });
@@ -123,8 +123,8 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ onClose }) => {
     },
     {
       id: 'equipment',
-      name: 'Gestión de Equipos',
-      description: 'Control de inventario y equipos',
+      name: 'Balance de Cuotas',
+      description: 'Control de ingresos, pagos y cuotas residenciales',
       icon: Package,
       status: 'active',
       version: '2.0.8',
@@ -133,8 +133,8 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ onClose }) => {
     },
     {
       id: 'tickets',
-      name: 'Sistema de Tickets',
-      description: 'Gestión de solicitudes y mantenimiento',
+      name: 'Reservación de Áreas',
+      description: 'Gestión de solicitudes y áreas comunes',
       icon: FileText,
       status: 'active',
       version: '2.1.0',
@@ -312,7 +312,13 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ onClose }) => {
                         <span>Rol:</span>
                         <span className={styles.userRole}>
                           {user?.role === 'admin' && 'Administrador'}
-                          {(user?.role === 'tecnico' || user?.role === 'technician') && 'Técnico'}
+                          {user?.role === 'presidente' && 'Presidente'}
+                          {user?.role === 'vicepresidente' && 'Vicepresidente'}
+                          {user?.role === 'tesorero' && 'Tesorero'}
+                          {user?.role === 'eventos' && 'Encargado de Eventos'}
+                          {user?.role === 'guardia' && 'Guardia de Seguridad'}
+                          {user?.role === 'residente' && 'Residente'}
+                          {(user?.role === 'tecnico' || user?.role === 'technician') && 'Técnico / Tesorero'}
                           {(user?.role === 'usuario' || user?.role === 'user') && 'Usuario'}
                         </span>
                       </div>
@@ -363,8 +369,8 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ onClose }) => {
                               {module.permissions.map(permission => (
                                 <span key={permission} className={styles.permissionTag}>
                                   {permission === 'admin' && 'Admin'}
-                                  {permission === 'tecnico' && 'Técnico'}
-                                  {permission === 'usuario' && 'Usuario'}
+                                  {permission === 'tecnico' && 'Tesorero / Directiva'}
+                                  {permission === 'usuario' && 'Residente'}
                                 </span>
                               ))}
                             </div>
@@ -465,7 +471,7 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ onClose }) => {
                       checked={settings.notifications.maintenance}
                       onChange={(e) => handleSettingChange('notifications', 'maintenance', e.target.checked)}
                     />
-                    Alertas de mantenimiento
+                    Alertas de cuotas y reservas
                   </label>
                 </div>
                 <div className={styles.setting}>
@@ -632,7 +638,7 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ onClose }) => {
 
         <div className={styles.footer}>
           <button className={styles.cancelButton} onClick={onClose}>
-            Cancelar
+            Regresar
           </button>
           <button className={styles.saveButton} onClick={saveSettings}>
             <Save size={16} />

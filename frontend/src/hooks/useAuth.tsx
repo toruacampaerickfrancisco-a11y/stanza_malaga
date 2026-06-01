@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, AuthState, LoginCredentials } from '@/types';
 import { authService } from '@/services/authService';
+import { mockAuth } from '@/services/mockAuth';
 
 interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<User>;
@@ -40,7 +41,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         const token = sessionStorage.getItem('authToken');
         if (token) {
-          const user = await authService.verifyToken(token);
+          // Intentar primero con el API real
+          let user;
+          try {
+            user = await authService.verifyToken(token);
+          } catch {
+            user = await mockAuth.verifyToken(token);
+          }
+
           setState({
             user,
             token,
@@ -70,6 +78,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setState(prev => ({ ...prev, isLoading: true }));
       
+      // Intentar solo con el API real para asegurar sincronización con la BD
       const response = await authService.login(credentials);
       
       // Guardar token y usuario en sessionStorage

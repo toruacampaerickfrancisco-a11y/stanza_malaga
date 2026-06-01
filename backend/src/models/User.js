@@ -53,6 +53,7 @@ class User extends Model {
       updated_at,
       permisos,
       permissions,
+      cargo,
       // También extraer asociaciones que podrían venir en dataValues
       tickets_solicitados,
       tickets_asignados,
@@ -106,6 +107,7 @@ class User extends Model {
       department: String(departmentName || 'Sin Departamento'),
       departmentId: department_id,
       isActive: activo,
+      phone: cargo || '',
       createdAt: createdAt || (created_at ? new Date(created_at).toISOString() : undefined),
       updatedAt: updatedAt || (updated_at ? new Date(updated_at).toISOString() : undefined),
       permissions: userPermissions,

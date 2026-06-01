@@ -185,7 +185,7 @@ class UserController {
         where,
         limit: parseInt(limit),
         offset: parseInt(offset),
-        order: [['created_at', 'DESC']],
+        order: [['createdAt', 'DESC']],
         include: [
           {
             model: UserPermission,
@@ -287,7 +287,8 @@ class UserController {
         employeeNumber,
         role = 'user',
         department,
-        isActive = true
+        isActive = true,
+        phone = ''
       } = ctx.request.body;
 
       // Normalizar rol para consistencia en BD (siempre minúsculas y sin acentos)
@@ -359,6 +360,7 @@ class UserController {
           rol: role,
           department_id,
           dependencia,
+          cargo: phone,
           activo: true
         });
 
@@ -402,6 +404,7 @@ class UserController {
         rol: role,
         department_id,
         dependencia,
+        cargo: phone,
         activo: isActive
       });
 
@@ -485,7 +488,6 @@ class UserController {
     }
   }
 
-  // Actualizar usuario
   async updateUser(ctx) {
     try {
       const { id } = ctx.params;
@@ -497,7 +499,8 @@ class UserController {
         employeeNumber,
         role,
         department,
-        isActive
+        isActive,
+        phone
       } = ctx.request.body;
 
       // Normalizar rol si se proporciona
@@ -517,9 +520,9 @@ class UserController {
 
       // Verificar duplicados si se cambian valores únicos
       const shouldCheckDuplicates = 
-        (username && username !== user.usuario) || 
-        (email && email !== user.correo) || 
-        (employeeNumber && employeeNumber !== user.numero_empleado);
+      (username && username !== user.usuario) || 
+      (email && email !== user.correo) || 
+      (employeeNumber && employeeNumber !== user.numero_empleado);
 
       if (shouldCheckDuplicates) {
         const orConditions = [];
@@ -571,6 +574,7 @@ class UserController {
         ...(role && { rol: role }),
         ...(department_id !== undefined && { department_id }),
         ...(dependencia !== undefined && { dependencia }),
+        ...(phone !== undefined && { cargo: phone }),
         ...(isActive !== undefined && { activo: isActive })
       });
 

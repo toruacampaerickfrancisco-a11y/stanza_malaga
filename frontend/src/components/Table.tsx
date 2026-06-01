@@ -146,7 +146,7 @@ const Table: React.FC<TableProps> = ({
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody className={styles.tbody}>
               {loading ? (
                 <tr><td className={styles.td} colSpan={columns.length + (selectable ? 1 : 0)}>Cargando...</td></tr>
               ) : error ? (
@@ -157,7 +157,7 @@ const Table: React.FC<TableProps> = ({
                 sortedData.map((row, idx) => (
                   <tr key={idx} onClick={() => onRowClick?.(row)} style={{ cursor: onRowClick ? 'pointer' : 'default' }}>
                     {selectable && (
-                      <td className={styles.td} style={{ textAlign: 'center' }}>
+                      <td className={styles.td} style={{ textAlign: 'center' }} data-label="Seleccionar">
                         <input
                           type="checkbox"
                           checked={selectedIds.includes(row[rowKey])}
@@ -169,7 +169,7 @@ const Table: React.FC<TableProps> = ({
                       </td>
                     )}
                     {columns.map(col => (
-                      <td key={col.key} className={styles.td}>{col.render ? col.render(row) : row[col.key]}</td>
+                      <td key={col.key} className={styles.td} data-label={col.label}>{col.render ? col.render(row) : row[col.key]}</td>
                     ))}
                   </tr>
                 ))

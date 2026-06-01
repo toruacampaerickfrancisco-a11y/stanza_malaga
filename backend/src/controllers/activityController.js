@@ -34,9 +34,9 @@ export const listActivities = async (ctx) => {
     
     // Filtro fechas
     if (from_date || to_date) {
-        where.created_at = {};
-        if (from_date) where.created_at[Op.gte] = new Date(from_date);
-        if (to_date) where.created_at[Op.lte] = new Date(to_date);
+        where.createdAt = {};
+        if (from_date) where.createdAt[Op.gte] = new Date(from_date);
+        if (to_date) where.createdAt[Op.lte] = new Date(to_date);
     }
 
     const activities = await Activity.findAll({

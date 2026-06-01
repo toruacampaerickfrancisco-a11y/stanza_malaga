@@ -65,15 +65,36 @@ export const usePermissions = (): UsePermissionsReturn => {
   const hasPermission = useCallback((module: PermissionModule, action: PermissionAction): boolean => {
     if (!user) return false;
 
-    // Los administradores tienen todos los permisos
-    if (user.role === 'admin') return true;
+    // Los administradores y mesa directiva (presidentes/vicepresidentes) tienen todos los permisos
+    if (['admin', 'presidente', 'vicepresidente'].includes(user.role)) return true;
 
-    // Lógica basada en roles fijos (según requerimientos)
+    // Lógica basada en roles fijos (según requerimientos residenciales)
     if (user.role === 'tecnico' || user.role === 'technician') {
       // Técnico: Dashboard, Equipos, Tickets (Edición y Eliminación permitidas)
       if (['dashboard', 'equipment', 'tickets'].includes(module)) {
         return true;
       }
+      return false;
+    }
+
+    if (user.role === 'tesorero') {
+      // Tesorero: Balance de Cuotas, Reportes, Actividades (Dashboard) y Calendario (Tickets)
+      if (['equipment', 'reports', 'dashboard', 'profile'].includes(module)) return true;
+      if (module === 'tickets') {
+        return action === 'view' || action === 'create';
+      }
+      return false;
+    }
+
+    if (user.role === 'eventos') {
+      // Encargado de Eventos: Reservación de Áreas (Tickets) completo y Catálogo de Eventos (Users)
+      if (['tickets', 'users', 'profile'].includes(module)) return true;
+      return false;
+    }
+
+    if (user.role === 'guardia') {
+      // Guardia de Seguridad: Entradas a la Cerrada (Supplies) completo
+      if (['supplies', 'profile'].includes(module)) return true;
       return false;
     }
 
@@ -86,11 +107,12 @@ export const usePermissions = (): UsePermissionsReturn => {
       return false;
     }
 
-    if (user.role === 'usuario' || user.role === 'user') {
-      // Usuario: Solo Tickets (Solo crear/ver propios)
+    if (user.role === 'usuario' || user.role === 'user' || user.role === 'residente') {
+      // Residente / Usuario: Solo Reservaciones de Áreas (crear/ver propios) y Perfil
       if (module === 'tickets') {
         return action === 'view' || action === 'create';
       }
+      if (module === 'profile') return true;
       return false;
     }
 

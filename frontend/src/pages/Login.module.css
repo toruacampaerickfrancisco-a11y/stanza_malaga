@@ -273,6 +273,21 @@
   transform: scale(0.98);
 }
 
+.alertMessage {
+  background-color: #fee2e2;
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 20px;
+}
+
+.textAlertMessage {
+  color: #b91c1c;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: center;
+}
+
 .registerSection {
   text-align: center;
   font-size: 0.9rem;
@@ -319,4 +334,138 @@
   -webkit-text-fill-color: white !important;
   transition: background-color 5000s ease-in-out 0s;
   caret-color: white;
+}
+
+/* Custom Styles for Password Recovery (OTP & WhatsApp Notification) */
+.whatsappToast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 320px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  border-left: 5px solid #25d366; /* Verde de WhatsApp */
+  z-index: 9999;
+  padding: 12px 16px;
+  font-family: system-ui, -apple-system, sans-serif;
+  animation: slideInRight 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.whatsappHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.whatsappLogo {
+  color: #25d366;
+  display: flex;
+  align-items: center;
+}
+
+.whatsappTitle {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.whatsappTime {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-left: auto;
+}
+
+.whatsappBody {
+  font-size: 0.825rem;
+  color: #374151;
+  line-height: 1.4;
+  background: #f0fdf4;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #dcfce7;
+  text-align: left;
+}
+
+.whatsappClose {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+}
+
+.whatsappClose:hover {
+  color: #4b5563;
+}
+
+/* OTP Digits Input styling */
+.otpContainer {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.otpInput {
+  width: 45px;
+  height: 50px;
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  outline: none;
+  transition: all 0.2s ease-in-out;
+}
+
+.otpInput:focus {
+  border-color: #800020; /* Color vino de Stanza */
+  box-shadow: 0 0 0 3px rgba(128, 0, 32, 0.15);
+}
+
+.otpTimer {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin-top: 10px;
+  display: block;
+}
+
+/* Strength Meter */
+.strengthMeter {
+  height: 6px;
+  border-radius: 3px;
+  background-color: #e2e8f0;
+  margin-top: 8px;
+  margin-bottom: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.strengthBar {
+  height: 100%;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.strengthText {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: right;
+  display: block;
 }
