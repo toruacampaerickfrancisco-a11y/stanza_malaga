@@ -124,11 +124,11 @@ const Dashboard: React.FC = () => {
         }}>
           <StatTriangle 
             value={stats.totalTickets} 
-            label="Total de Servicios y Trámites" 
+            label="Total de Reservaciones" 
           />
           <StatTriangle 
             value={stats.totalEquipment} 
-            label="Equipos Registrados" 
+            label="Transacciones Registradas" 
           />
           <StatTriangle 
             value={stats.totalUsers} 
@@ -150,19 +150,19 @@ const Dashboard: React.FC = () => {
         }}>
           <StatTriangle 
             value={stats.openTickets} 
-            label="Tickets Abiertos" 
+            label="Reservaciones Solicitadas" 
           />
           <StatTriangle 
             value={stats.pendingTickets} 
-            label="Tickets Pendientes" 
+            label="Reservaciones Confirmadas" 
           />
           <StatTriangle 
             value={stats.inProgressTickets} 
-            label="Tickets En Proceso" 
+            label="Reservaciones Realizadas" 
           />
           <StatTriangle 
             value={stats.closedTickets} 
-            label="Tickets Cerrados" 
+            label="Reservaciones Canceladas" 
           />
         </div>
 
@@ -180,11 +180,11 @@ const Dashboard: React.FC = () => {
         }}>
           <StatTriangle 
             value={stats.operationalEquipment} 
-            label="Equipos Operativos" 
+            label="Transacciones Pagadas" 
           />
           <StatTriangle 
             value={stats.equipmentInRepair} 
-            label="Equipos En Reparación" 
+            label="Transacciones Pendientes" 
           />
           <StatTriangle 
             value={stats.activeUsers} 
@@ -224,7 +224,7 @@ const Dashboard: React.FC = () => {
                 onClick={() => navigate('/tickets')}
               >
                 <CustomIcon327 size={18} />
-                Crear Ticket
+                Nueva Reservación
               </button>
               
               {(user?.role === 'admin' || user?.role === 'tecnico') && (
@@ -234,7 +234,7 @@ const Dashboard: React.FC = () => {
                     onClick={() => navigate('/equipos')}
                   >
                     <CustomIcon327 size={18} />
-                    Agregar Equipo
+                    Registrar Pago
                   </button>
                   
                   <button 

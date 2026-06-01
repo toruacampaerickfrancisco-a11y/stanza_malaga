@@ -45,6 +45,7 @@ class AuthController {
       });
 
       if (!user) {
+        console.log('Fallo: No user found for', identifier);
         ctx.status = 401;
         ctx.body = {
           success: false,
@@ -55,6 +56,7 @@ class AuthController {
 
       // Verificar si el usuario está activo
       if (!user.activo) {
+        console.log('Fallo: User not active', user.usuario);
         ctx.status = 401;
         ctx.body = {
           success: false,
@@ -65,6 +67,7 @@ class AuthController {
 
       // Verificar contraseña
       const isValidPassword = await user.validarContrasena(password);
+      console.log('User found:', user.usuario, 'Valid password?', isValidPassword);
       if (!isValidPassword) {
         ctx.status = 401;
         ctx.body = {
