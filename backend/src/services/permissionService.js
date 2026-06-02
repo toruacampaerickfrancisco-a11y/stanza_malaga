@@ -28,20 +28,23 @@ export async function assignDefaultPermissions(user, role, grantedById, options 
         { module: 'profile', actions: ['view', 'edit'] },
         { module: 'equipment', actions: ['view', 'create', 'edit', 'delete'] }, // Balance de Cuotas
         { module: 'reports', actions: ['view', 'export'] },
-        { module: 'tickets', actions: ['view'] }
+        { module: 'tickets', actions: ['view'] },
+        { module: 'users', actions: ['view'] }
       ],
       'eventos': [
         { module: 'dashboard', actions: ['view'] },
         { module: 'profile', actions: ['view', 'edit'] },
         { module: 'tickets', actions: ['view', 'create', 'edit', 'delete'] }, // Reservación de Áreas
         { module: 'departments', actions: ['view', 'create', 'edit', 'delete'] }, // Catálogo de Eventos
-        { module: 'calendar', actions: ['view'] }
+        { module: 'calendar', actions: ['view'] },
+        { module: 'users', actions: ['view'] }
       ],
       'guardia': [
         { module: 'dashboard', actions: ['view'] },
         { module: 'profile', actions: ['view', 'edit'] },
         { module: 'supplies', actions: ['view', 'create', 'edit'] }, // Entradas a la Cerrada
-        { module: 'tickets', actions: ['view'] }
+        { module: 'tickets', actions: ['view'] },
+        { module: 'users', actions: ['view'] }
       ],
       'residente': [
         { module: 'dashboard', actions: ['view'] },

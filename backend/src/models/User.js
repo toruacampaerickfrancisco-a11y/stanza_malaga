@@ -129,7 +129,6 @@ User.init({
   numero_empleado: {
     type: DataTypes.STRING(20),
     allowNull: true, // Cambiado a true para hacerlo opcional
-    unique: true,
     validate: {
       // La validación notEmpty se elimina o se maneja en la lógica de negocio si es necesario
     }
