@@ -309,13 +309,17 @@ class UserController {
       }
 
       // Verificar si ya existe un usuario con el mismo username, email o employeeNumber
+      const orConditions = [
+        { usuario: username },
+        { correo: email }
+      ];
+      if (employeeNumber && employeeNumber.trim() !== '') {
+        orConditions.push({ numero_empleado: employeeNumber });
+      }
+
       const existingUsers = await User.findAll({
         where: {
-          [Op.or]: [
-            { usuario: username },
-            { correo: email },
-            { numero_empleado: employeeNumber }
-          ]
+          [Op.or]: orConditions
         }
       });
 
@@ -356,7 +360,7 @@ class UserController {
           correo: email,
           contrasena: password, // El hook beforeUpdate se encargará de hashear
           nombre_completo: fullName,
-          numero_empleado: employeeNumber,
+          numero_empleado: employeeNumber && employeeNumber.trim() !== '' ? employeeNumber : null,
           rol: role,
           department_id,
           dependencia,
@@ -400,7 +404,7 @@ class UserController {
         correo: email,
         contrasena: password,
         nombre_completo: fullName,
-        numero_empleado: employeeNumber,
+        numero_empleado: employeeNumber && employeeNumber.trim() !== '' ? employeeNumber : null,
         rol: role,
         department_id,
         dependencia,
@@ -519,17 +523,16 @@ class UserController {
       }
 
       // Verificar duplicados si se cambian valores únicos
-      const shouldCheckDuplicates = 
-      (username && username !== user.usuario) || 
-      (email && email !== user.correo) || 
-      (employeeNumber && employeeNumber !== user.numero_empleado);
+      const orConditions = [];
+      if (username && username !== user.usuario) orConditions.push({ usuario: username });
+      if (email && email !== user.correo) orConditions.push({ correo: email });
+      if (employeeNumber && employeeNumber.trim() !== '' && employeeNumber !== user.numero_empleado) {
+        orConditions.push({ numero_empleado: employeeNumber });
+      }
+
+      const shouldCheckDuplicates = orConditions.length > 0;
 
       if (shouldCheckDuplicates) {
-        const orConditions = [];
-        if (username && username !== user.usuario) orConditions.push({ usuario: username });
-        if (email && email !== user.correo) orConditions.push({ correo: email });
-        if (employeeNumber && employeeNumber !== user.numero_empleado) orConditions.push({ numero_empleado: employeeNumber });
-
         const existingUser = await User.findOne({
           where: {
             id: { [Op.ne]: id },
@@ -570,7 +573,7 @@ class UserController {
         ...(email && { correo: email }),
         ...(password && { contrasena: password }),
         ...(fullName && { nombre_completo: fullName }),
-        ...(employeeNumber && { numero_empleado: employeeNumber }),
+        ...(employeeNumber !== undefined && { numero_empleado: employeeNumber && employeeNumber.trim() !== '' ? employeeNumber : null }),
         ...(role && { rol: role }),
         ...(department_id !== undefined && { department_id }),
         ...(dependencia !== undefined && { dependencia }),
