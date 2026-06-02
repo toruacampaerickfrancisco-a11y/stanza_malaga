@@ -7,7 +7,19 @@ const getBaseURL = () => {
   if (isNativeApp || window.location.protocol.startsWith('capacitor')) {
     return 'http://10.0.2.2:3000/api';
   }
-  return import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+  
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+
+  // Si estamos en desarrollo local con puerto de React dev server, usar localhost:3000
+  const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  if (isDev && window.location.port && window.location.port !== '3000') {
+    return `http://${window.location.hostname}:3000/api`;
+  }
+
+  // En producción, usar el mismo origen que cargó la aplicación web
+  return `${window.location.origin}/api`;
 };
 
 const client = axios.create({
