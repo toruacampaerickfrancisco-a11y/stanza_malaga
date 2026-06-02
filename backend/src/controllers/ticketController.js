@@ -183,7 +183,7 @@ const ticketController = {
           {
             model: User,
             as: 'reportedBy',
-            attributes: ['id', 'nombre_completo', 'correo'],
+            attributes: ['id', 'nombre_completo', 'correo', 'departamento', 'dependencia', 'department_id'],
             include: [
               { model: Department, as: 'department', attributes: ['display_name'] }
             ]
@@ -225,7 +225,7 @@ const ticketController = {
         { 
           model: User, 
           as: 'reportedBy', 
-          attributes: ['id', 'nombre_completo', 'correo'],
+          attributes: ['id', 'nombre_completo', 'correo', 'departamento', 'dependencia', 'department_id'],
           include: [{ model: Department, as: 'department', attributes: ['display_name'] }]
         },
         { model: User, as: 'assignedTo', attributes: ['id', 'nombre_completo', 'correo'] },
@@ -486,7 +486,7 @@ const ticketController = {
           { 
             model: User, 
             as: 'reportedBy', 
-            attributes: ['id', 'nombre_completo', 'correo'],
+            attributes: ['id', 'nombre_completo', 'correo', 'departamento', 'dependencia', 'department_id'],
             include: [{ model: Department, as: 'department', attributes: ['display_name'] }]
           },
           { 
@@ -650,7 +650,7 @@ const ticketController = {
           { 
             model: User, 
             as: 'reportedBy', 
-            attributes: ['id', 'nombre_completo', 'correo'],
+            attributes: ['id', 'nombre_completo', 'correo', 'departamento', 'dependencia', 'department_id'],
             include: [{ model: Department, as: 'department', attributes: ['display_name'] }]
           },
           { model: User, as: 'assignedTo', attributes: ['id', 'nombre_completo', 'correo'] },
