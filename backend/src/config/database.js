@@ -36,8 +36,8 @@ const testConnection = async () => {
 // Función para sincronizar modelos
 const syncDatabase = async (force = false) => {
   try {
-    await sequelize.sync({ force, alter: true });
-    logger.info(force ? 'Base de datos recreada y sincronizada' : 'Base de datos sincronizada (alter=true)');
+    await sequelize.sync({ force, alter: false });
+    logger.info(force ? 'Base de datos recreada y sincronizada' : 'Base de datos sincronizada (alter=false)');
   } catch (error) {
     logger.error(`Error al sincronizar la base de datos: ${error.message}`);
     
