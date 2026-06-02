@@ -710,7 +710,7 @@ const Activities: React.FC = () => {
                   docUrl = parsed.documentUrl;
                 } else {
                   const isNative = window.location.origin.includes('localhost') && !window.location.port;
-                  const base = (isNative || window.location.protocol.startsWith('capacitor')) ? 'http://10.0.2.2:3000' : `http://${window.location.hostname}:3000`;
+                  const base = (isNative || window.location.protocol.startsWith('capacitor')) ? 'http://10.0.2.2:3000' : window.location.origin;
                   docUrl = `${base}${parsed.documentUrl}`;
                 }
               }

@@ -106,7 +106,7 @@ const Sidebar: React.FC = () => {
   const isNativeApp = window.location.origin.includes('localhost') && !window.location.port;
   const baseUrl = (isNativeApp || window.location.protocol.startsWith('capacitor'))
     ? 'http://10.0.2.2:3000'
-    : `http://${window.location.hostname}:3000`;
+    : window.location.origin;
   const logoUrl = `${baseUrl}/logo.png`;
 
   const handleLogout = () => {

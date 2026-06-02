@@ -893,7 +893,7 @@ const ReportsPage: React.FC = () => {
                 if (isNative || window.location.protocol.startsWith('capacitor')) {
                   return 'http://10.0.2.2:3000';
                 }
-                return `http://${window.location.hostname}:3000`;
+                return window.location.origin;
             })()}${parsed.documentUrl}`}
             target="_blank"
             rel="noopener noreferrer"
