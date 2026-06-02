@@ -348,6 +348,38 @@ const ticketController = {
       }
 
       const ticketNumber = await Ticket.generateTicketNumber();
+
+      // Auto-crear área común (equipo virtual) si no existe en la base de datos para evitar fallos de Foreign Key
+      if (equipmentId) {
+        try {
+          const eqExists = await Equipment.findByPk(equipmentId);
+          if (!eqExists) {
+            let eqName = 'Tejaban Principal';
+            let eqSerialNumber = 'TP-01';
+            let eqInventoryNumber = 'TP-INV-01';
+            if (equipmentId !== '36b65adf-f5ac-4916-b89f-367598e6ebaa') {
+              eqName = `Área Común ${equipmentId.slice(0, 8)}`;
+              eqSerialNumber = `AC-${equipmentId.slice(0, 8)}`;
+              eqInventoryNumber = `INV-${equipmentId.slice(0, 8)}`;
+            }
+            await Equipment.create({
+              id: equipmentId,
+              name: eqName,
+              type: 'otro',
+              brand: 'Área',
+              model: 'Común',
+              serial_number: eqSerialNumber,
+              inventory_number: eqInventoryNumber,
+              status: 'available',
+              location: 'Área Común',
+              description: 'Creado automáticamente para dar soporte a la reservación virtual'
+            });
+            console.log(`[Self-Healing] Área común auto-creada en la base de datos: ${eqName} (${equipmentId})`);
+          }
+        } catch (eqError) {
+          console.error('Error al auto-crear el área común:', eqError);
+        }
+      }
       
       // Determinar quién reporta el ticket
       let finalReportedById = ctx.state.user.id;
@@ -542,7 +574,38 @@ const ticketController = {
       if (priority) updates.priority = priority;
       if (status) updates.status = status;
       if (serviceType) updates.service_type = serviceType;
-      if (equipmentId) updates.equipment_id = equipmentId;
+      if (equipmentId) {
+        // Auto-crear área común (equipo virtual) si no existe en la base de datos para evitar fallos de Foreign Key
+        try {
+          const eqExists = await Equipment.findByPk(equipmentId);
+          if (!eqExists) {
+            let eqName = 'Tejaban Principal';
+            let eqSerialNumber = 'TP-01';
+            let eqInventoryNumber = 'TP-INV-01';
+            if (equipmentId !== '36b65adf-f5ac-4916-b89f-367598e6ebaa') {
+              eqName = `Área Común ${equipmentId.slice(0, 8)}`;
+              eqSerialNumber = `AC-${equipmentId.slice(0, 8)}`;
+              eqInventoryNumber = `INV-${equipmentId.slice(0, 8)}`;
+            }
+            await Equipment.create({
+              id: equipmentId,
+              name: eqName,
+              type: 'otro',
+              brand: 'Área',
+              model: 'Común',
+              serial_number: eqSerialNumber,
+              inventory_number: eqInventoryNumber,
+              status: 'available',
+              location: 'Área Común',
+              description: 'Creado automáticamente para dar soporte a la reservación virtual'
+            });
+            console.log(`[Self-Healing] Área común auto-creada en la base de datos durante actualización: ${eqName} (${equipmentId})`);
+          }
+        } catch (eqError) {
+          console.error('Error al auto-crear el área común en actualización:', eqError);
+        }
+        updates.equipment_id = equipmentId;
+      }
       if (assignedToId) updates.assigned_to_id = assignedToId;
       if (diagnosis) updates.diagnosis = diagnosis;
       if (solution) updates.solution = solution;
