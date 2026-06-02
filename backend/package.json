@@ -1,7 +1,7 @@
 {
-  "name": "mantenimiento-erp-backend",
+  "name": "stanza-malaga-admin-backend",
   "version": "1.0.0",
-  "description": "Backend API para Sistema ERP de Mantenimiento - Secretaría de Bienestar del Estado de Sonora",
+  "description": "Backend API para Sistema de Administración Residencial - Stanza Malaga",
   "main": "src/app.js",
   "type": "module",
   "scripts": {
@@ -26,12 +26,12 @@
     "koa",
     "sequelize",
     "postgresql",
-    "erp",
-    "mantenimiento",
+    "administracion",
+    "residencial",
     "api",
     "backend"
   ],
-  "author": "Secretaría de Bienestar del Estado de Sonora",
+  "author": "Stanza Malaga Sección Almería",
   "license": "MIT",
   "dependencies": {
     "@koa/cors": "^5.0.0",

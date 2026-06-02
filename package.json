@@ -1,8 +1,8 @@
 {
-  "name": "mantenimiento-erp",
+  "name": "stanza-malaga-admin",
   "version": "1.0.0",
   "type": "module",
-  "description": "Sistema ERP para Mantenimiento de Equipos - Secretaría de Bienestar del Estado de Sonora",
+  "description": "Sistema de Administración Residencial para Stanza Malaga Sección Almería",
   "scripts": {
   "dev": "vite --host 0.0.0.0 --port 30001",
     "build": "tsc && vite build",

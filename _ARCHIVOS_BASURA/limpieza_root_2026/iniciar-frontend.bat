@@ -1,9 +1,0 @@
-@echo off
-TITLE Frontend - Sistema Mantenimiento ERP
-echo Iniciando Frontend...
-cd frontend
-echo Instalando dependencias (si faltan)...
-call npm install
-echo Arrancando servidor de desarrollo...
-npm run dev
-pause

@@ -1,9 +1,0 @@
-@echo off
-TITLE Backend - Sistema Mantenimiento ERP
-echo Iniciando Backend...
-cd backend
-echo Instalando dependencias (si faltan)...
-call npm install
-echo Arrancando servidor...
-npm run dev
-pause
